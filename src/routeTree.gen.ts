@@ -9,38 +9,161 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UnauthorizedRouteImport } from './routes/unauthorized'
+import { Route as SessionTimeoutRouteImport } from './routes/session-timeout'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
+import { Route as ChangePasswordRouteImport } from './routes/change-password'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LoginStudentRouteImport } from './routes/login.student'
+import { Route as LoginStaffRouteImport } from './routes/login.staff'
+import { Route as LoginAdminRouteImport } from './routes/login.admin'
 
+const UnauthorizedRoute = UnauthorizedRouteImport.update({
+  id: '/unauthorized',
+  path: '/unauthorized',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SessionTimeoutRoute = SessionTimeoutRouteImport.update({
+  id: '/session-timeout',
+  path: '/session-timeout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChangePasswordRoute = ChangePasswordRouteImport.update({
+  id: '/change-password',
+  path: '/change-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginStudentRoute = LoginStudentRouteImport.update({
+  id: '/login/student',
+  path: '/login/student',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginStaffRoute = LoginStaffRouteImport.update({
+  id: '/login/staff',
+  path: '/login/staff',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginAdminRoute = LoginAdminRouteImport.update({
+  id: '/login/admin',
+  path: '/login/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/change-password': typeof ChangePasswordRoute
+  '/forgot-password': typeof ForgotPasswordRoute
+  '/session-timeout': typeof SessionTimeoutRoute
+  '/unauthorized': typeof UnauthorizedRoute
+  '/login/admin': typeof LoginAdminRoute
+  '/login/staff': typeof LoginStaffRoute
+  '/login/student': typeof LoginStudentRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/change-password': typeof ChangePasswordRoute
+  '/forgot-password': typeof ForgotPasswordRoute
+  '/session-timeout': typeof SessionTimeoutRoute
+  '/unauthorized': typeof UnauthorizedRoute
+  '/login/admin': typeof LoginAdminRoute
+  '/login/staff': typeof LoginStaffRoute
+  '/login/student': typeof LoginStudentRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/change-password': typeof ChangePasswordRoute
+  '/forgot-password': typeof ForgotPasswordRoute
+  '/session-timeout': typeof SessionTimeoutRoute
+  '/unauthorized': typeof UnauthorizedRoute
+  '/login/admin': typeof LoginAdminRoute
+  '/login/staff': typeof LoginStaffRoute
+  '/login/student': typeof LoginStudentRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/change-password'
+    | '/forgot-password'
+    | '/session-timeout'
+    | '/unauthorized'
+    | '/login/admin'
+    | '/login/staff'
+    | '/login/student'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/change-password'
+    | '/forgot-password'
+    | '/session-timeout'
+    | '/unauthorized'
+    | '/login/admin'
+    | '/login/staff'
+    | '/login/student'
+  id:
+    | '__root__'
+    | '/'
+    | '/change-password'
+    | '/forgot-password'
+    | '/session-timeout'
+    | '/unauthorized'
+    | '/login/admin'
+    | '/login/staff'
+    | '/login/student'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ChangePasswordRoute: typeof ChangePasswordRoute
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
+  SessionTimeoutRoute: typeof SessionTimeoutRoute
+  UnauthorizedRoute: typeof UnauthorizedRoute
+  LoginAdminRoute: typeof LoginAdminRoute
+  LoginStaffRoute: typeof LoginStaffRoute
+  LoginStudentRoute: typeof LoginStudentRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/unauthorized': {
+      id: '/unauthorized'
+      path: '/unauthorized'
+      fullPath: '/unauthorized'
+      preLoaderRoute: typeof UnauthorizedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/session-timeout': {
+      id: '/session-timeout'
+      path: '/session-timeout'
+      fullPath: '/session-timeout'
+      preLoaderRoute: typeof SessionTimeoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/change-password': {
+      id: '/change-password'
+      path: '/change-password'
+      fullPath: '/change-password'
+      preLoaderRoute: typeof ChangePasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,12 +171,50 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login/student': {
+      id: '/login/student'
+      path: '/login/student'
+      fullPath: '/login/student'
+      preLoaderRoute: typeof LoginStudentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login/staff': {
+      id: '/login/staff'
+      path: '/login/staff'
+      fullPath: '/login/staff'
+      preLoaderRoute: typeof LoginStaffRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login/admin': {
+      id: '/login/admin'
+      path: '/login/admin'
+      fullPath: '/login/admin'
+      preLoaderRoute: typeof LoginAdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ChangePasswordRoute: ChangePasswordRoute,
+  ForgotPasswordRoute: ForgotPasswordRoute,
+  SessionTimeoutRoute: SessionTimeoutRoute,
+  UnauthorizedRoute: UnauthorizedRoute,
+  LoginAdminRoute: LoginAdminRoute,
+  LoginStaffRoute: LoginStaffRoute,
+  LoginStudentRoute: LoginStudentRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

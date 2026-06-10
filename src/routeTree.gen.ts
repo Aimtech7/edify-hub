@@ -19,11 +19,15 @@ import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as LoginStudentRouteImport } from './routes/login.student'
 import { Route as LoginStaffRouteImport } from './routes/login.staff'
 import { Route as LoginAdminRouteImport } from './routes/login.admin'
+import { Route as AppStudentsRouteImport } from './routes/app.students'
 import { Route as AppResultsRouteImport } from './routes/app.results'
+import { Route as AppReportsRouteImport } from './routes/app.reports'
 import { Route as AppReceiptsRouteImport } from './routes/app.receipts'
 import { Route as AppProfileRouteImport } from './routes/app.profile'
+import { Route as AppMarksRouteImport } from './routes/app.marks'
 import { Route as AppFinanceRouteImport } from './routes/app.finance'
 import { Route as AppDashboardRouteImport } from './routes/app.dashboard'
+import { Route as AppAttendanceRouteImport } from './routes/app.attendance'
 
 const UnauthorizedRoute = UnauthorizedRouteImport.update({
   id: '/unauthorized',
@@ -75,9 +79,19 @@ const LoginAdminRoute = LoginAdminRouteImport.update({
   path: '/login/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppStudentsRoute = AppStudentsRouteImport.update({
+  id: '/students',
+  path: '/students',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppResultsRoute = AppResultsRouteImport.update({
   id: '/results',
   path: '/results',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppReportsRoute = AppReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
   getParentRoute: () => AppRoute,
 } as any)
 const AppReceiptsRoute = AppReceiptsRouteImport.update({
@@ -90,6 +104,11 @@ const AppProfileRoute = AppProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => AppRoute,
 } as any)
+const AppMarksRoute = AppMarksRouteImport.update({
+  id: '/marks',
+  path: '/marks',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppFinanceRoute = AppFinanceRouteImport.update({
   id: '/finance',
   path: '/finance',
@@ -100,6 +119,11 @@ const AppDashboardRoute = AppDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAttendanceRoute = AppAttendanceRouteImport.update({
+  id: '/attendance',
+  path: '/attendance',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -108,11 +132,15 @@ export interface FileRoutesByFullPath {
   '/forgot-password': typeof ForgotPasswordRoute
   '/session-timeout': typeof SessionTimeoutRoute
   '/unauthorized': typeof UnauthorizedRoute
+  '/app/attendance': typeof AppAttendanceRoute
   '/app/dashboard': typeof AppDashboardRoute
   '/app/finance': typeof AppFinanceRoute
+  '/app/marks': typeof AppMarksRoute
   '/app/profile': typeof AppProfileRoute
   '/app/receipts': typeof AppReceiptsRoute
+  '/app/reports': typeof AppReportsRoute
   '/app/results': typeof AppResultsRoute
+  '/app/students': typeof AppStudentsRoute
   '/login/admin': typeof LoginAdminRoute
   '/login/staff': typeof LoginStaffRoute
   '/login/student': typeof LoginStudentRoute
@@ -124,11 +152,15 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof ForgotPasswordRoute
   '/session-timeout': typeof SessionTimeoutRoute
   '/unauthorized': typeof UnauthorizedRoute
+  '/app/attendance': typeof AppAttendanceRoute
   '/app/dashboard': typeof AppDashboardRoute
   '/app/finance': typeof AppFinanceRoute
+  '/app/marks': typeof AppMarksRoute
   '/app/profile': typeof AppProfileRoute
   '/app/receipts': typeof AppReceiptsRoute
+  '/app/reports': typeof AppReportsRoute
   '/app/results': typeof AppResultsRoute
+  '/app/students': typeof AppStudentsRoute
   '/login/admin': typeof LoginAdminRoute
   '/login/staff': typeof LoginStaffRoute
   '/login/student': typeof LoginStudentRoute
@@ -142,11 +174,15 @@ export interface FileRoutesById {
   '/forgot-password': typeof ForgotPasswordRoute
   '/session-timeout': typeof SessionTimeoutRoute
   '/unauthorized': typeof UnauthorizedRoute
+  '/app/attendance': typeof AppAttendanceRoute
   '/app/dashboard': typeof AppDashboardRoute
   '/app/finance': typeof AppFinanceRoute
+  '/app/marks': typeof AppMarksRoute
   '/app/profile': typeof AppProfileRoute
   '/app/receipts': typeof AppReceiptsRoute
+  '/app/reports': typeof AppReportsRoute
   '/app/results': typeof AppResultsRoute
+  '/app/students': typeof AppStudentsRoute
   '/login/admin': typeof LoginAdminRoute
   '/login/staff': typeof LoginStaffRoute
   '/login/student': typeof LoginStudentRoute
@@ -161,11 +197,15 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/session-timeout'
     | '/unauthorized'
+    | '/app/attendance'
     | '/app/dashboard'
     | '/app/finance'
+    | '/app/marks'
     | '/app/profile'
     | '/app/receipts'
+    | '/app/reports'
     | '/app/results'
+    | '/app/students'
     | '/login/admin'
     | '/login/staff'
     | '/login/student'
@@ -177,11 +217,15 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/session-timeout'
     | '/unauthorized'
+    | '/app/attendance'
     | '/app/dashboard'
     | '/app/finance'
+    | '/app/marks'
     | '/app/profile'
     | '/app/receipts'
+    | '/app/reports'
     | '/app/results'
+    | '/app/students'
     | '/login/admin'
     | '/login/staff'
     | '/login/student'
@@ -194,11 +238,15 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/session-timeout'
     | '/unauthorized'
+    | '/app/attendance'
     | '/app/dashboard'
     | '/app/finance'
+    | '/app/marks'
     | '/app/profile'
     | '/app/receipts'
+    | '/app/reports'
     | '/app/results'
+    | '/app/students'
     | '/login/admin'
     | '/login/staff'
     | '/login/student'
@@ -289,11 +337,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginAdminRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/app/students': {
+      id: '/app/students'
+      path: '/students'
+      fullPath: '/app/students'
+      preLoaderRoute: typeof AppStudentsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/results': {
       id: '/app/results'
       path: '/results'
       fullPath: '/app/results'
       preLoaderRoute: typeof AppResultsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/reports': {
+      id: '/app/reports'
+      path: '/reports'
+      fullPath: '/app/reports'
+      preLoaderRoute: typeof AppReportsRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/receipts': {
@@ -310,6 +372,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProfileRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/marks': {
+      id: '/app/marks'
+      path: '/marks'
+      fullPath: '/app/marks'
+      preLoaderRoute: typeof AppMarksRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/finance': {
       id: '/app/finance'
       path: '/finance'
@@ -324,24 +393,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppDashboardRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/attendance': {
+      id: '/app/attendance'
+      path: '/attendance'
+      fullPath: '/app/attendance'
+      preLoaderRoute: typeof AppAttendanceRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
+  AppAttendanceRoute: typeof AppAttendanceRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppFinanceRoute: typeof AppFinanceRoute
+  AppMarksRoute: typeof AppMarksRoute
   AppProfileRoute: typeof AppProfileRoute
   AppReceiptsRoute: typeof AppReceiptsRoute
+  AppReportsRoute: typeof AppReportsRoute
   AppResultsRoute: typeof AppResultsRoute
+  AppStudentsRoute: typeof AppStudentsRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppAttendanceRoute: AppAttendanceRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppFinanceRoute: AppFinanceRoute,
+  AppMarksRoute: AppMarksRoute,
   AppProfileRoute: AppProfileRoute,
   AppReceiptsRoute: AppReceiptsRoute,
+  AppReportsRoute: AppReportsRoute,
   AppResultsRoute: AppResultsRoute,
+  AppStudentsRoute: AppStudentsRoute,
   AppIndexRoute: AppIndexRoute,
 }
 

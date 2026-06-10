@@ -29,7 +29,9 @@ function Settings() {
               <Field label="Phone" defaultValue={INSTITUTION.phone} />
               <Field label="Email" defaultValue={INSTITUTION.email} />
             </div>
-          </CardContent></Card>
+          </div>
+        </CardContent></Card>
+
 
         <Card className="shadow-card"><CardContent className="p-6">
           <h3 className="font-semibold mb-4">Finance</h3>

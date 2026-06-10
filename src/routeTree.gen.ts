@@ -19,6 +19,11 @@ import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as LoginStudentRouteImport } from './routes/login.student'
 import { Route as LoginStaffRouteImport } from './routes/login.staff'
 import { Route as LoginAdminRouteImport } from './routes/login.admin'
+import { Route as AppResultsRouteImport } from './routes/app.results'
+import { Route as AppReceiptsRouteImport } from './routes/app.receipts'
+import { Route as AppProfileRouteImport } from './routes/app.profile'
+import { Route as AppFinanceRouteImport } from './routes/app.finance'
+import { Route as AppDashboardRouteImport } from './routes/app.dashboard'
 
 const UnauthorizedRoute = UnauthorizedRouteImport.update({
   id: '/unauthorized',
@@ -70,6 +75,31 @@ const LoginAdminRoute = LoginAdminRouteImport.update({
   path: '/login/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppResultsRoute = AppResultsRouteImport.update({
+  id: '/results',
+  path: '/results',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppReceiptsRoute = AppReceiptsRouteImport.update({
+  id: '/receipts',
+  path: '/receipts',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProfileRoute = AppProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppFinanceRoute = AppFinanceRouteImport.update({
+  id: '/finance',
+  path: '/finance',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDashboardRoute = AppDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -78,6 +108,11 @@ export interface FileRoutesByFullPath {
   '/forgot-password': typeof ForgotPasswordRoute
   '/session-timeout': typeof SessionTimeoutRoute
   '/unauthorized': typeof UnauthorizedRoute
+  '/app/dashboard': typeof AppDashboardRoute
+  '/app/finance': typeof AppFinanceRoute
+  '/app/profile': typeof AppProfileRoute
+  '/app/receipts': typeof AppReceiptsRoute
+  '/app/results': typeof AppResultsRoute
   '/login/admin': typeof LoginAdminRoute
   '/login/staff': typeof LoginStaffRoute
   '/login/student': typeof LoginStudentRoute
@@ -89,6 +124,11 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof ForgotPasswordRoute
   '/session-timeout': typeof SessionTimeoutRoute
   '/unauthorized': typeof UnauthorizedRoute
+  '/app/dashboard': typeof AppDashboardRoute
+  '/app/finance': typeof AppFinanceRoute
+  '/app/profile': typeof AppProfileRoute
+  '/app/receipts': typeof AppReceiptsRoute
+  '/app/results': typeof AppResultsRoute
   '/login/admin': typeof LoginAdminRoute
   '/login/staff': typeof LoginStaffRoute
   '/login/student': typeof LoginStudentRoute
@@ -102,6 +142,11 @@ export interface FileRoutesById {
   '/forgot-password': typeof ForgotPasswordRoute
   '/session-timeout': typeof SessionTimeoutRoute
   '/unauthorized': typeof UnauthorizedRoute
+  '/app/dashboard': typeof AppDashboardRoute
+  '/app/finance': typeof AppFinanceRoute
+  '/app/profile': typeof AppProfileRoute
+  '/app/receipts': typeof AppReceiptsRoute
+  '/app/results': typeof AppResultsRoute
   '/login/admin': typeof LoginAdminRoute
   '/login/staff': typeof LoginStaffRoute
   '/login/student': typeof LoginStudentRoute
@@ -116,6 +161,11 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/session-timeout'
     | '/unauthorized'
+    | '/app/dashboard'
+    | '/app/finance'
+    | '/app/profile'
+    | '/app/receipts'
+    | '/app/results'
     | '/login/admin'
     | '/login/staff'
     | '/login/student'
@@ -127,6 +177,11 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/session-timeout'
     | '/unauthorized'
+    | '/app/dashboard'
+    | '/app/finance'
+    | '/app/profile'
+    | '/app/receipts'
+    | '/app/results'
     | '/login/admin'
     | '/login/staff'
     | '/login/student'
@@ -139,6 +194,11 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/session-timeout'
     | '/unauthorized'
+    | '/app/dashboard'
+    | '/app/finance'
+    | '/app/profile'
+    | '/app/receipts'
+    | '/app/results'
     | '/login/admin'
     | '/login/staff'
     | '/login/student'
@@ -229,14 +289,59 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginAdminRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/app/results': {
+      id: '/app/results'
+      path: '/results'
+      fullPath: '/app/results'
+      preLoaderRoute: typeof AppResultsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/receipts': {
+      id: '/app/receipts'
+      path: '/receipts'
+      fullPath: '/app/receipts'
+      preLoaderRoute: typeof AppReceiptsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/profile': {
+      id: '/app/profile'
+      path: '/profile'
+      fullPath: '/app/profile'
+      preLoaderRoute: typeof AppProfileRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/finance': {
+      id: '/app/finance'
+      path: '/finance'
+      fullPath: '/app/finance'
+      preLoaderRoute: typeof AppFinanceRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/dashboard': {
+      id: '/app/dashboard'
+      path: '/dashboard'
+      fullPath: '/app/dashboard'
+      preLoaderRoute: typeof AppDashboardRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
+  AppDashboardRoute: typeof AppDashboardRoute
+  AppFinanceRoute: typeof AppFinanceRoute
+  AppProfileRoute: typeof AppProfileRoute
+  AppReceiptsRoute: typeof AppReceiptsRoute
+  AppResultsRoute: typeof AppResultsRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppDashboardRoute: AppDashboardRoute,
+  AppFinanceRoute: AppFinanceRoute,
+  AppProfileRoute: AppProfileRoute,
+  AppReceiptsRoute: AppReceiptsRoute,
+  AppResultsRoute: AppResultsRoute,
   AppIndexRoute: AppIndexRoute,
 }
 

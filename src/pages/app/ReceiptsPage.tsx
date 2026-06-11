@@ -107,25 +107,27 @@ function ReceiptView({ r }: { r: Receipt }) {
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3 py-4 text-sm">
-          <div><div className="text-xs text-muted-foreground">Student</div><div className="font-medium">{r.studentName}</div></div>
-          <div><div className="text-xs text-muted-foreground">Adm. No</div><div className="font-mono">{r.admissionNo}</div></div>
-          <div><div className="text-xs text-muted-foreground">Payer</div><div>{r.payer}</div></div>
-          <div><div className="text-xs text-muted-foreground">Method</div><div>{r.method} · {r.reference}</div></div>
+          <div><div className="text-xs text-muted-foreground">Student Name</div><div className="font-medium">{r.studentName}</div></div>
+          <div><div className="text-xs text-muted-foreground">Admission Number</div><div className="font-mono">{r.admissionNo}</div></div>
+          <div><div className="text-xs text-muted-foreground">Payer Name</div><div>{r.payer}</div></div>
+          <div><div className="text-xs text-muted-foreground">Payment Date</div><div>{r.date}</div></div>
+          <div><div className="text-xs text-muted-foreground">Payment Method</div><div>{r.method} · {r.reference}</div></div>
+          <div><div className="text-xs text-muted-foreground">Current Payment</div><div className="font-semibold text-success">{currency(r.amount)}</div></div>
         </div>
         <table className="w-full text-sm border-t border-border">
-          <thead><tr className="text-left text-xs text-muted-foreground"><th className="py-2">Allocation</th><th className="py-2 text-right">Amount</th></tr></thead>
+          <thead><tr className="text-left text-xs text-muted-foreground"><th className="py-2">Allocation Breakdown</th><th className="py-2 text-right">Amount</th></tr></thead>
           <tbody>
             {r.allocations.map((a) => (
               <tr key={a.category} className="border-t border-border"><td className="py-2">{a.category}</td><td className="py-2 text-right">{currency(a.amount)}</td></tr>
             ))}
-            <tr className="border-t border-border font-semibold"><td className="py-2">Total received</td><td className="py-2 text-right">{currency(total)}</td></tr>
+            <tr className="border-t border-border font-semibold"><td className="py-2">Total Allocated</td><td className="py-2 text-right">{currency(total)}</td></tr>
           </tbody>
         </table>
         {student && (
           <div className="mt-4 grid grid-cols-3 gap-3 text-sm pt-4 border-t border-border">
             <div><div className="text-xs text-muted-foreground">Total Fees</div><div className="font-medium">{currency(student.totalFees)}</div></div>
             <div><div className="text-xs text-muted-foreground">Total Paid</div><div className="font-medium text-success">{currency(student.paid)}</div></div>
-            <div><div className="text-xs text-muted-foreground">Balance</div><div className="font-medium text-warning">{currency(student.totalFees - student.paid)}</div></div>
+            <div><div className="text-xs text-muted-foreground">Outstanding Balance</div><div className="font-medium text-warning">{currency(student.totalFees - student.paid)}</div></div>
           </div>
         )}
         <div className="mt-4 pt-4 border-t border-border text-[11px] text-muted-foreground italic">Computer-generated receipt — no signature required.</div>

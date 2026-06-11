@@ -6,8 +6,9 @@ WORKDIR /app
 # Copy package configuration files
 COPY package.json package-lock.json* ./
 
-# Install dependencies
-RUN npm install
+# Use npm ci for clean, reproducible installs (includes devDependencies by default)
+# --include=dev ensures TypeScript, Vite and other build tools are present
+RUN npm ci --include=dev
 
 # Copy source code and build
 COPY . .

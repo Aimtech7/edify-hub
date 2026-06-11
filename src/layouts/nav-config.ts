@@ -37,6 +37,7 @@ export const NAV: Record<Role, NavGroup[]> = {
       items: [
         { to: "/app/dashboard", label: "Dashboard",      icon: LayoutDashboard },
         { to: "/app/levels",    label: "My Progress",    icon: TrendingUp },
+        { to: "/app/attendance", label: "My Attendance",  icon: CalendarCheck2 },
         { to: "/app/results",   label: "Results",        icon: FileBarChart2 },
       ],
     },

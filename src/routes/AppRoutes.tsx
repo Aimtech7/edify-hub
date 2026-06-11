@@ -58,7 +58,14 @@ export default function AppRoutes() {
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="profile"   element={<ProfilePage />} />
         <Route path="results"   element={<ResultsPage />} />
-        <Route path="receipts"  element={<ReceiptsPage />} />
+        <Route
+          path="receipts"
+          element={
+            <RoleProtectedRoute allowed={["student", "accountant", "admin"]}>
+              <ReceiptsPage />
+            </RoleProtectedRoute>
+          }
+        />
 
         {/* Language Levels — student (read-only), teacher, admin */}
         <Route
@@ -97,7 +104,7 @@ export default function AppRoutes() {
         <Route
           path="attendance"
           element={
-            <RoleProtectedRoute allowed={["teacher"]}>
+            <RoleProtectedRoute allowed={["teacher", "student", "admin"]}>
               <AttendancePage />
             </RoleProtectedRoute>
           }

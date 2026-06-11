@@ -24,6 +24,7 @@ const NAV: Record<Role, NavGroup[]> = {
   student: [
     { label: "Overview", items: [
       { to: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { to: "/app/attendance", label: "My Attendance", icon: CalendarCheck2 },
       { to: "/app/results", label: "Academic Results", icon: FileBarChart2 },
     ]},
     { label: "Finance", items: [

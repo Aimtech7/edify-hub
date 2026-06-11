@@ -1,15 +1,17 @@
 import { useState } from "react";
-import { PageHeader } from "@/components/ui-bits";
+import { useCurrentUser } from "@/components/app-shell";
+import { PageHeader, StatCard } from "@/components/ui-bits";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { STUDENTS, ATTENDANCE_RECENT, CEFR_LEVELS } from "@/lib/sample-data";
-import { CheckCircle2, XCircle } from "lucide-react";
+import { CheckCircle2, XCircle, Calendar, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 
 export default function AttendancePage() {
+  const user = useCurrentUser();
   const [lvl, setLvl] = useState("B2");
   const students = STUDENTS.filter((s) => s.level === lvl);
   const [present, setPresent] = useState<Record<string, boolean>>(() =>
@@ -21,6 +23,57 @@ export default function AttendancePage() {
     const newStudents = STUDENTS.filter((s) => s.level === v);
     setPresent(Object.fromEntries(newStudents.map((s) => [s.id, true])));
   };
+
+  if (!user) return null;
+
+  // Student-specific view
+  if (user.role === "student") {
+    const myStudent = STUDENTS.find((s) => s.admissionNo === user.admissionNo) ?? STUDENTS[0];
+    const myAttendance = [
+      { date: "2025-05-14", status: "Present", remark: "On time" },
+      { date: "2025-05-13", status: "Present", remark: "On time" },
+      { date: "2025-05-12", status: "Absent", remark: "Excused medical leave" },
+      { date: "2025-05-11", status: "Present", remark: "On time" },
+      { date: "2025-05-10", status: "Present", remark: "On time" },
+    ];
+    return (
+      <>
+        <PageHeader title="My Attendance" description={`Attendance record for Level ${myStudent.level} · Cohort ${myStudent.batch}`} />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <StatCard label="Total Sessions" value={30} icon={<Calendar className="size-5" />} />
+          <StatCard label="Present Days" value={28} tone="success" icon={<CheckCircle2 className="size-5" />} />
+          <StatCard label="Attendance Rate" value="93.3%" tone="success" icon={<TrendingUp className="size-5" />} />
+        </div>
+        <Card className="shadow-card">
+          <CardContent className="p-6">
+            <h3 className="font-semibold mb-4">Attendance Log</h3>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Remarks</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {myAttendance.map((a) => (
+                  <TableRow key={a.date}>
+                    <TableCell>{a.date}</TableCell>
+                    <TableCell>
+                      <Badge className={a.status === "Present" ? "bg-success/15 text-success border-success/20" : "bg-destructive/10 text-destructive border-destructive/20"}>
+                        {a.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{a.remark}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </>
+    );
+  }
 
   const presentCount = Object.values(present).filter(Boolean).length;
   const absentCount = Object.values(present).length - presentCount;

@@ -13,6 +13,10 @@ import {
   Wallet, TrendingUp, Clock, GraduationCap, Users, AlertTriangle, ClipboardList,
   Calendar, FileBarChart2, Activity, ShieldAlert, Database, Award,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { paymentService } from "@/services/payment-service";
+import type { Payment } from "@/types";
 
 export default function DashboardPage() {
   const user = useCurrentUser();
@@ -256,17 +260,99 @@ function TeacherDash() {
 }
 
 function AccountantDash() {
-  const today = RECEIPTS.reduce((s, r) => s + r.amount, 0);
-  const outstanding = STUDENTS.reduce((s, st) => s + (st.totalFees - st.paid), 0);
+  const navigate = useNavigate();
+  const [unallocated, setUnallocated] = useState<Payment[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [stats, setStats] = useState({
+    todayCollections: 125000,
+    monthlyCollections: 850000,
+    outstandingAmount: 240000,
+  });
+
+  useEffect(() => {
+    let active = true;
+    const loadData = async () => {
+      try {
+        const unallocatedData = await paymentService.search({ unallocated: true });
+        if (active) {
+          setUnallocated(unallocatedData);
+        }
+      } catch (err) {
+        console.error("Failed to load dashboard data", err);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    loadData();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const totalUnallocatedAmount = unallocated.reduce((sum, p) => sum + p.amount, 0);
+
   return (
     <>
-      <PageHeader title="Finance overview" description="Today · 14 May 2025" action={<Button className="gradient-primary text-primary-foreground">New payment</Button>} />
+      <PageHeader 
+        title="Finance overview" 
+        description={`Today · ${new Date().toLocaleDateString("en-GB", { day: 'numeric', month: 'long', year: 'numeric' })}`} 
+        action={<Button onClick={() => navigate("/app/payments")} className="gradient-primary text-primary-foreground">Record payment</Button>} 
+      />
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Today's collections" value={currency(today)} tone="success" icon={<Wallet className="size-5" />} />
-        <StatCard label="This month" value={currency(today * 6)} tone="info" icon={<TrendingUp className="size-5" />} />
-        <StatCard label="Outstanding" value={currency(outstanding)} tone="warning" icon={<AlertTriangle className="size-5" />} />
-        <StatCard label="Unallocated" value={currency(18000)} tone="destructive" icon={<ShieldAlert className="size-5" />} />
+        <StatCard label="Today's collections" value={currency(stats.todayCollections)} tone="success" icon={<Wallet className="size-5" />} />
+        <StatCard label="This month" value={currency(stats.monthlyCollections)} tone="info" icon={<TrendingUp className="size-5" />} />
+        <StatCard label="Outstanding" value={currency(stats.outstandingAmount)} tone="warning" icon={<AlertTriangle className="size-5" />} />
+        <StatCard label="Unallocated" value={currency(totalUnallocatedAmount)} hint={`${unallocated.length} pending split`} tone="destructive" icon={<ShieldAlert className="size-5" />} />
       </div>
+
+      {unallocated.length > 0 && (
+        <Card className="mt-6 border-destructive/20 bg-destructive/5 shadow-card animate-in fade-in slide-in-from-top-2 duration-200">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-3 mb-4 text-destructive">
+              <ShieldAlert className="size-5" />
+              <h3 className="font-semibold text-base">Action Required: Unallocated Payments</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              The following payments have been received but are not yet allocated to student fee categories. Please review and allocate them to balance the accounts.
+            </p>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Student</TableHead>
+                  <TableHead>Reference</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {unallocated.map((p) => (
+                  <TableRow key={p.id}>
+                    <TableCell className="text-sm">{p.date}</TableCell>
+                    <TableCell>
+                      <div className="font-medium text-sm">{p.studentName}</div>
+                      <div className="text-xs text-muted-foreground">{p.admissionNo}</div>
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">{p.reference || "—"}</TableCell>
+                    <TableCell className="text-right font-semibold text-primary">{currency(p.amount)}</TableCell>
+                    <TableCell className="text-right">
+                      <Button 
+                        size="sm" 
+                        variant="destructive"
+                        className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                        onClick={() => navigate(`/app/allocations?paymentId=${p.id}`)}
+                      >
+                        Allocate Now
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid lg:grid-cols-3 gap-4 mt-6">
         <Card className="lg:col-span-2 shadow-card">

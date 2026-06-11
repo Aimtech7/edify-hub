@@ -33,4 +33,13 @@ export const allocationService = {
     if (USE_FIXTURES) return fixtureDelay(undefined, 600);
     await apiClient.post("/allocations/", payload);
   },
+
+  async allocate(paymentId: number | string, allocations: { category: string; amount: number }[]): Promise<void> {
+    if (USE_FIXTURES) return fixtureDelay(undefined, 600);
+    await apiClient.post("/allocations/allocate/", {
+      payment_id: typeof paymentId === 'string' ? parseInt(paymentId, 10) : paymentId,
+      allocations
+    });
+  }
 };
+

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/ui-bits";
 import { useCurrentUser } from "@/components/app-shell";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,20 +7,40 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { RECEIPTS, STUDENTS, INSTITUTION, currency, type Receipt } from "@/lib/sample-data";
-import { Printer, Download, Search, Eye, GraduationCap } from "lucide-react";
+import { INSTITUTION, currency } from "@/lib/sample-data";
+import { Printer, Download, Search, Eye, GraduationCap, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { receiptService } from "@/services/receipt-service";
+import { studentService } from "@/services/student-service";
+import type { Receipt, Student } from "@/types";
 
 export default function ReceiptsPage() {
   const user = useCurrentUser();
   const [q, setQ] = useState("");
+  const [receipts, setReceipts] = useState<Receipt[]>([]);
+  const [loading, setLoading] = useState(true);
   const [active, setActive] = useState<Receipt | null>(null);
+
+  const fetchReceipts = async () => {
+    setLoading(true);
+    try {
+      // Students see their own receipts (enforced in API based on user token)
+      const data = await receiptService.list();
+      setReceipts(data);
+    } catch (err) {
+      toast.error("Failed to load receipts");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchReceipts();
+  }, []);
+
   if (!user) return null;
 
-  const list = user.role === "student"
-    ? RECEIPTS.filter((r) => r.admissionNo === user.admissionNo)
-    : RECEIPTS;
-  const filtered = list.filter((r) =>
+  const filtered = receipts.filter((r) =>
     !q || r.receiptNo.toLowerCase().includes(q.toLowerCase())
        || r.studentName.toLowerCase().includes(q.toLowerCase())
        || r.admissionNo.toLowerCase().includes(q.toLowerCase())
@@ -43,36 +63,50 @@ export default function ReceiptsPage() {
       </Card>
       <Card className="shadow-card">
         <CardContent className="p-6">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Receipt</TableHead>
-                <TableHead>Date</TableHead>
-                {user.role !== "student" && <TableHead>Student</TableHead>}
-                <TableHead>Payer</TableHead>
-                <TableHead>Method</TableHead>
-                <TableHead>Reference</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-                <TableHead></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((r) => (
-                <TableRow key={r.id}>
-                  <TableCell className="font-mono text-xs">{r.receiptNo}</TableCell>
-                  <TableCell>{r.date}</TableCell>
-                  {user.role !== "student" && <TableCell><div className="font-medium">{r.studentName}</div><div className="text-xs text-muted-foreground">{r.admissionNo}</div></TableCell>}
-                  <TableCell>{r.payer}</TableCell>
-                  <TableCell><Badge variant="outline">{r.method}</Badge></TableCell>
-                  <TableCell className="font-mono text-xs">{r.reference}</TableCell>
-                  <TableCell className="text-right font-semibold">{currency(r.amount)}</TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="sm" onClick={() => setActive(r)}><Eye className="size-4 mr-1" />View</Button>
-                  </TableCell>
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="size-6 animate-spin text-primary mr-2" />
+              <span className="text-muted-foreground text-sm">Loading receipts...</span>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Receipt</TableHead>
+                  <TableHead>Date</TableHead>
+                  {user.role !== "student" && <TableHead>Student</TableHead>}
+                  <TableHead>Payer</TableHead>
+                  <TableHead>Method</TableHead>
+                  <TableHead>Reference</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead></TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filtered.map((r) => (
+                  <TableRow key={r.id}>
+                    <TableCell className="font-mono text-xs font-semibold">{r.receiptNo}</TableCell>
+                    <TableCell>{r.date}</TableCell>
+                    {user.role !== "student" && <TableCell><div className="font-medium">{r.studentName}</div><div className="text-xs text-muted-foreground">{r.admissionNo}</div></TableCell>}
+                    <TableCell>{r.payer}</TableCell>
+                    <TableCell><Badge variant="outline">{r.method}</Badge></TableCell>
+                    <TableCell className="font-mono text-xs">{r.reference || "—"}</TableCell>
+                    <TableCell className="text-right font-semibold">{currency(r.amount)}</TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="sm" onClick={() => setActive(r)}><Eye className="size-4 mr-1" />View</Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {filtered.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={user.role === "student" ? 7 : 8} className="text-center text-muted-foreground py-8">
+                      No receipts found.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 
@@ -87,8 +121,18 @@ export default function ReceiptsPage() {
 }
 
 function ReceiptView({ r }: { r: Receipt }) {
-  const student = STUDENTS.find((s) => s.id === r.studentId);
+  const [student, setStudent] = useState<Student | null>(null);
+
+  useEffect(() => {
+    if (r.studentId) {
+      studentService.get(r.studentId)
+        .then(setStudent)
+        .catch(() => {});
+    }
+  }, [r.studentId]);
+
   const total = r.allocations.reduce((s, a) => s + a.amount, 0);
+
   return (
     <div>
       <div className="rounded-lg border border-border p-5 bg-card">

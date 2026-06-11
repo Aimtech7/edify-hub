@@ -11,11 +11,13 @@ export default function FinancePage() {
   if (!user) return null;
   const me = STUDENTS.find((s) => s.admissionNo === user.admissionNo) ?? STUDENTS[0];
   const myReceipts = RECEIPTS.filter((r) => r.studentId === me.id);
-  const fs = FEE_STRUCTURE.find((f) => f.classroom === me.classroom) ?? FEE_STRUCTURE[0];
+  const fs = FEE_STRUCTURE.find((f) => f.level === me.level) ?? FEE_STRUCTURE[0];
+
+  const totalStructuredFees = fs.tuition + fs.exam + (fs.materials ?? 0) + (fs.certificate ?? 0) + fs.activity;
 
   return (
     <>
-      <PageHeader title="Fee Statement" description={`${me.classroom} · ${me.admissionNo}`} />
+      <PageHeader title="Fee Statement" description={`Level ${me.level} · ${me.admissionNo}`} />
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Total Fees" value={currency(me.totalFees)} icon={<Wallet className="size-5" />} />
         <StatCard label="Total Paid" value={currency(me.paid)} tone="success" icon={<TrendingUp className="size-5" />} />
@@ -26,16 +28,16 @@ export default function FinancePage() {
       <div className="grid lg:grid-cols-2 gap-4 mt-6">
         <Card className="shadow-card">
           <CardContent className="p-6">
-            <h3 className="font-semibold mb-4">Fee structure · {me.classroom}</h3>
+            <h3 className="font-semibold mb-4">Fee structure · Level {me.level}</h3>
             <Table>
               <TableHeader><TableRow><TableHead>Category</TableHead><TableHead className="text-right">Amount</TableHead></TableRow></TableHeader>
               <TableBody>
-                <TableRow><TableCell>Tuition</TableCell><TableCell className="text-right">{currency(fs.tuition)}</TableCell></TableRow>
-                <TableRow><TableCell>Examination</TableCell><TableCell className="text-right">{currency(fs.exam)}</TableCell></TableRow>
-                <TableRow><TableCell>Library</TableCell><TableCell className="text-right">{currency(fs.library)}</TableCell></TableRow>
-                <TableRow><TableCell>Activity Fee</TableCell><TableCell className="text-right">{currency(fs.activity)}</TableCell></TableRow>
-                <TableRow><TableCell>Boarding</TableCell><TableCell className="text-right">{currency(fs.boarding)}</TableCell></TableRow>
-                <TableRow className="font-semibold"><TableCell>Total</TableCell><TableCell className="text-right">{currency(fs.tuition + fs.exam + fs.library + fs.activity + fs.boarding)}</TableCell></TableRow>
+                <TableRow><TableCell>Course Fee (Tuition)</TableCell><TableCell className="text-right">{currency(fs.tuition)}</TableCell></TableRow>
+                <TableRow><TableCell>Exam Registration</TableCell><TableCell className="text-right">{currency(fs.exam)}</TableCell></TableRow>
+                <TableRow><TableCell>Study Materials</TableCell><TableCell className="text-right">{currency(fs.materials ?? 0)}</TableCell></TableRow>
+                <TableRow><TableCell>Certificate Fee</TableCell><TableCell className="text-right">{currency(fs.certificate ?? 0)}</TableCell></TableRow>
+                <TableRow><TableCell>Lab/Tech Fee</TableCell><TableCell className="text-right">{currency(fs.activity)}</TableCell></TableRow>
+                <TableRow className="font-semibold"><TableCell>Total Module Fees</TableCell><TableCell className="text-right">{currency(totalStructuredFees)}</TableCell></TableRow>
               </TableBody>
             </Table>
           </CardContent>

@@ -175,7 +175,7 @@ function Breadcrumbs({ pathname }: { pathname: string }) {
 function NotificationsButton() {
   const items = [
     { t: "Payment received", d: "KES 25,000 from Mr. Wanjiru", ago: "2m" },
-    { t: "Marks pending", d: "Form 1 Green · Mathematics", ago: "1h" },
+    { t: "Marks pending", d: "B2 Batch-03 · Grammatik", ago: "1h" },
     { t: "New announcement", d: "Mid-term exams begin July 1st", ago: "3h" },
   ];
   return (

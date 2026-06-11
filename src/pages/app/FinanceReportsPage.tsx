@@ -29,12 +29,12 @@ export default function FinanceReportsPage() {
           <CardContent className="p-6">
             <h3 className="font-semibold mb-4">Outstanding balances</h3>
             <Table>
-              <TableHeader><TableRow><TableHead>Student</TableHead><TableHead>Class</TableHead><TableHead className="text-right">Balance</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow><TableHead>Student</TableHead><TableHead>Level</TableHead><TableHead className="text-right">Balance</TableHead></TableRow></TableHeader>
               <TableBody>
                 {STUDENTS.filter((s) => s.totalFees - s.paid > 0).map((s) => (
                   <TableRow key={s.id}>
                     <TableCell className="font-medium">{s.name}</TableCell>
-                    <TableCell><Badge variant="outline">{s.classroom}</Badge></TableCell>
+                    <TableCell><Badge variant="outline">Level {s.level}</Badge></TableCell>
                     <TableCell className="text-right font-medium text-warning">{currency(s.totalFees - s.paid)}</TableCell>
                   </TableRow>
                 ))}

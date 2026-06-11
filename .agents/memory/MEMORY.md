@@ -1,0 +1,1 @@
+- [React Router Migration](react-router-migration.md) — TanStack→RR-DOM migration complete; all pages in src/pages/, routing in src/routes/AppRoutes.tsx

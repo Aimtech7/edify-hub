@@ -1,12 +1,11 @@
 import { ReactNode } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link } from "react-router-dom";
 import { GraduationCap } from "lucide-react";
 import { INSTITUTION } from "@/lib/sample-data";
 
 export function AuthShell({ title, subtitle, children, footer }: { title: string; subtitle?: string; children: ReactNode; footer?: ReactNode }) {
   return (
     <div className="min-h-screen grid lg:grid-cols-2 bg-background">
-      {/* Brand panel */}
       <div className="relative hidden lg:flex flex-col justify-between p-12 text-primary-foreground gradient-primary overflow-hidden">
         <div className="absolute inset-0 opacity-30"
              style={{ background: "radial-gradient(50% 50% at 20% 20%, white, transparent)" }} />
@@ -26,7 +25,6 @@ export function AuthShell({ title, subtitle, children, footer }: { title: string
         <div className="relative text-xs opacity-75">© {new Date().getFullYear()} {INSTITUTION.name}</div>
       </div>
 
-      {/* Form panel */}
       <div className="flex items-center justify-center p-6 sm:p-10">
         <div className="w-full max-w-md">
           <Link to="/" className="lg:hidden flex items-center gap-2 mb-8">

@@ -1,7 +1,7 @@
 import { ReactNode, useEffect, useState } from "react";
-import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { AuthUser, Role, clearUser, getUser } from "@/lib/auth";
-import { useTheme } from "@/lib/theme";
+import { useTheme } from "@/contexts/theme-context";
 import { INSTITUTION } from "@/lib/sample-data";
 import {
   LayoutDashboard, GraduationCap, FileBarChart2, Wallet, ReceiptText, User, Users, ClipboardEdit,
@@ -83,29 +83,27 @@ const roleLabel: Record<Role, string> = {
 };
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const nav = useNavigate();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
   const [user, setUserState] = useState<AuthUser | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { theme, toggle } = useTheme();
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => {
     const u = getUser();
-    if (!u) { nav({ to: "/login/student" }); return; }
+    if (!u) { navigate("/login/student"); return; }
     setUserState(u);
-  }, [nav]);
+  }, [navigate]);
 
   if (!user) return null;
   const groups = NAV[user.role];
 
   return (
     <div className="min-h-screen bg-muted/30">
-      {/* Mobile overlay */}
       {mobileOpen && (
         <div className="fixed inset-0 z-40 bg-foreground/40 lg:hidden" onClick={() => setMobileOpen(false)} />
       )}
 
-      {/* Sidebar */}
       <aside className={cn(
         "fixed inset-y-0 left-0 z-50 w-64 bg-sidebar text-sidebar-foreground flex flex-col transition-transform lg:translate-x-0",
         mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
@@ -156,7 +154,6 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      {/* Main */}
       <div className="lg:pl-64">
         <header className="sticky top-0 z-30 h-16 bg-background/85 backdrop-blur-md border-b border-border flex items-center gap-3 px-4 sm:px-6">
           <button className="lg:hidden" onClick={() => setMobileOpen(true)}><Menu className="size-5" /></button>
@@ -170,7 +167,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
             </Button>
             <NotificationsButton />
-            <UserMenu user={user} onLogout={() => { clearUser(); nav({ to: "/" }); }} />
+            <UserMenu user={user} onLogout={() => { clearUser(); navigate("/"); }} />
           </div>
         </header>
         <main className="p-4 sm:p-6 lg:p-8">{children}</main>
@@ -197,7 +194,7 @@ function Breadcrumbs({ pathname }: { pathname: string }) {
 
 function NotificationsButton() {
   const items = [
-    { t: "Payment received", d: "KES 25,000 from Mr. Wanjiru" , ago: "2m" },
+    { t: "Payment received", d: "KES 25,000 from Mr. Wanjiru", ago: "2m" },
     { t: "Marks pending", d: "Form 1 Green · Mathematics", ago: "1h" },
     { t: "New announcement", d: "Mid-term exams begin July 1st", ago: "3h" },
   ];
@@ -261,18 +258,19 @@ function UserMenu({ user, onLogout }: { user: AuthUser; onLogout: () => void }) 
 }
 
 export function RoleGate({ allowed, children }: { allowed: Role[]; children: ReactNode }) {
-  const nav = useNavigate();
+  const navigate = useNavigate();
   const [ok, setOk] = useState<boolean | null>(null);
   useEffect(() => {
     const u = getUser();
-    if (!u) { nav({ to: "/login/student" }); return; }
-    if (!allowed.includes(u.role)) { nav({ to: "/unauthorized" }); return; }
+    if (!u) { navigate("/login/student"); return; }
+    if (!allowed.includes(u.role)) { navigate("/unauthorized"); return; }
     setOk(true);
-  }, [nav, allowed]);
+  }, [navigate, allowed]);
   if (!ok) return null;
   return <>{children}</>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useCurrentUser() {
   const [u, setU] = useState<AuthUser | null>(null);
   useEffect(() => { setU(getUser()); }, []);

@@ -2,7 +2,6 @@ import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/auth-context";
 import type { Role } from "@/types";
 
-/** Requires an authenticated user; otherwise redirects to the student login. */
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const location = useLocation();
@@ -12,8 +11,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-/** Requires the user's role to be in `allowed`; otherwise redirects to /unauthorized. */
-export function RoleRoute({
+export function RoleProtectedRoute({
   allowed,
   children,
 }: {
@@ -30,3 +28,5 @@ export function RoleRoute({
   }
   return <>{children}</>;
 }
+
+export { RoleProtectedRoute as RoleRoute };

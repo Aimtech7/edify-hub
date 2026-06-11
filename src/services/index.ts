@@ -7,4 +7,5 @@ export * from "./payment-service";
 export * from "./allocation-service";
 export * from "./receipt-service";
 export * from "./admin-service";
+export * from "./certificate-service";
 export * from "./fixtures";

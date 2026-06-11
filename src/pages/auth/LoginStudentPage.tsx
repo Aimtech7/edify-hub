@@ -10,13 +10,13 @@ import { toast } from "sonner";
 export default function LoginStudentPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [adm, setAdm] = useState("ADM-2024-1042");
+  const [adm, setAdm] = useState("DA-2024-1042");
   const [pw, setPw] = useState("student");
 
   return (
     <AuthShell
       title="Student sign in"
-      subtitle="Use your admission number and password to access results, fees and receipts."
+      subtitle="Use your student number and password to access your results, fees and CEFR progress."
       footer={<>Staff? <Link to="/login/staff" className="text-primary font-medium">Staff login</Link> · <Link to="/login/admin" className="text-primary font-medium">Admin</Link></>}
     >
       <form
@@ -30,8 +30,8 @@ export default function LoginStudentPage() {
         className="space-y-4"
       >
         <div className="space-y-1.5">
-          <Label htmlFor="adm">Admission Number</Label>
-          <Input id="adm" value={adm} onChange={(e) => setAdm(e.target.value)} placeholder="ADM-2024-1042" />
+          <Label htmlFor="adm">Student Number</Label>
+          <Input id="adm" value={adm} onChange={(e) => setAdm(e.target.value)} placeholder="DA-2024-1042" />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="pw">Password</Label>

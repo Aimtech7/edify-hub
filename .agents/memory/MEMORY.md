@@ -1,1 +1,2 @@
 - [React Router Migration](react-router-migration.md) — TanStack→RR-DOM migration complete; all pages in src/pages/, routing in src/routes/AppRoutes.tsx
+- [CEFR Academic Structure](cefr-structure.md) — Institution is DeutschAkademie; all school class references replaced with A1–C2 CEFR levels; Language Levels module at /app/levels

@@ -12,14 +12,14 @@ import { toast } from "sonner";
 export default function LoginStaffPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [u, setU] = useState("dkimani");
+  const [u, setU] = useState("amueller");
   const [pw, setPw] = useState("staff");
   const [role, setRole] = useState<Role>("teacher");
 
   return (
     <AuthShell
       title="Staff sign in"
-      subtitle="Teachers and accountants — pick your role to continue."
+      subtitle="Instructors and accountants — pick your role to continue."
       footer={<>Are you a student? <Link to="/login/student" className="text-primary font-medium">Student login</Link></>}
     >
       <form
@@ -38,7 +38,7 @@ export default function LoginStaffPage() {
             {(["teacher", "accountant"] as Role[]).map((r) => (
               <label key={r} className={`cursor-pointer border rounded-lg p-3 text-sm flex items-center gap-2 ${role === r ? "border-primary bg-primary/5" : "border-border"}`}>
                 <RadioGroupItem value={r} id={r} />
-                <span className="capitalize">{r}</span>
+                <span className="capitalize">{r === "teacher" ? "Instructor" : r}</span>
               </label>
             ))}
           </RadioGroup>

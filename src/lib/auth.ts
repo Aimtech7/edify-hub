@@ -8,6 +8,7 @@ export interface AuthUser {
   email?: string;
   admissionNo?: string;
   classroom?: string;
+  level?: string;
 }
 
 const KEY = "horizon_auth_user";
@@ -35,32 +36,33 @@ export function loginAs(role: Role, username: string): AuthUser {
     student: {
       id: "stu-1042",
       name: "Amani Wanjiru",
-      username: username || "ADM-2024-1042",
+      username: username || "DA-2024-1042",
       role: "student",
-      admissionNo: "ADM-2024-1042",
-      classroom: "Form 3 Blue",
-      email: "amani.w@horizon.edu",
+      admissionNo: "DA-2024-1042",
+      classroom: "B2",
+      level: "B2",
+      email: "amani.w@deutschakademie.co.ke",
     },
     teacher: {
       id: "tea-201",
-      name: "Mr. David Kimani",
-      username: username || "dkimani",
+      name: "Frau Anna Müller",
+      username: username || "amueller",
       role: "teacher",
-      email: "d.kimani@horizon.edu",
+      email: "a.mueller@deutschakademie.co.ke",
     },
     accountant: {
       id: "acc-12",
       name: "Grace Achieng",
       username: username || "gachieng",
       role: "accountant",
-      email: "finance@horizon.edu",
+      email: "finance@deutschakademie.co.ke",
     },
     admin: {
       id: "adm-1",
       name: "System Administrator",
       username: username || "admin",
       role: "admin",
-      email: "admin@horizon.edu",
+      email: "admin@deutschakademie.co.ke",
     },
   };
   const u = presets[role];

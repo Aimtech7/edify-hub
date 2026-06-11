@@ -15,6 +15,7 @@ import ChangePasswordPage from "@/pages/auth/ChangePasswordPage";
 
 import DashboardPage from "@/pages/app/DashboardPage";
 import StudentsPage from "@/pages/app/StudentsPage";
+import LevelsPage from "@/pages/app/LevelsPage";
 import PaymentsPage from "@/pages/app/PaymentsPage";
 import AllocationsPage from "@/pages/app/AllocationsPage";
 import ReceiptsPage from "@/pages/app/ReceiptsPage";
@@ -55,9 +56,19 @@ export default function AppRoutes() {
       >
         <Route index element={<Navigate to="/app/dashboard" replace />} />
         <Route path="dashboard" element={<DashboardPage />} />
-        <Route path="profile" element={<ProfilePage />} />
-        <Route path="results" element={<ResultsPage />} />
-        <Route path="receipts" element={<ReceiptsPage />} />
+        <Route path="profile"   element={<ProfilePage />} />
+        <Route path="results"   element={<ResultsPage />} />
+        <Route path="receipts"  element={<ReceiptsPage />} />
+
+        {/* Language Levels — student (read-only), teacher, admin */}
+        <Route
+          path="levels"
+          element={
+            <RoleProtectedRoute allowed={["student", "teacher", "admin"]}>
+              <LevelsPage />
+            </RoleProtectedRoute>
+          }
+        />
 
         <Route
           path="finance"

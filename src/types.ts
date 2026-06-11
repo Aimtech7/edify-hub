@@ -1,5 +1,7 @@
 export type Role = "student" | "teacher" | "accountant" | "admin";
 
+export type CefrLevel = "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+
 export interface AuthUser {
   id: string;
   name: string;
@@ -8,6 +10,7 @@ export interface AuthUser {
   email?: string;
   admissionNo?: string;
   classroom?: string;
+  level?: string;
 }
 
 export interface LoginCredentials {
@@ -15,16 +18,32 @@ export interface LoginCredentials {
   password: string;
 }
 
+export interface LevelEvent {
+  level: CefrLevel;
+  status: "completed" | "active" | "upcoming";
+  enrolledDate: string;
+  completedDate?: string;
+  finalScore?: number;
+  certificateNo?: string;
+}
+
 export interface Student {
   id: string;
   admissionNo: string;
   name: string;
+  level: CefrLevel;
   classroom: string;
+  batch: string;
+  instructor: string;
+  enrolledDate: string;
+  expectedCompletion: string;
   gender: "M" | "F";
-  parent: string;
+  nationality: string;
   phone: string;
+  email: string;
   totalFees: number;
   paid: number;
+  progressionHistory: LevelEvent[];
 }
 
 export interface SubjectResult {
@@ -85,9 +104,12 @@ export interface Payment {
 
 export interface FeeStructure {
   classroom: string;
+  level: string;
   tuition: number;
   exam: number;
   library: number;
   activity: number;
   boarding: number;
+  materials?: number;
+  certificate?: number;
 }

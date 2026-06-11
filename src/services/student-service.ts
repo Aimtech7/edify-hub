@@ -11,17 +11,18 @@ import type { Student } from "@/types";
  *   PATCH  /students/:id/        -> Student
  */
 export const studentService = {
-  async list(params?: { classroom?: string; search?: string }): Promise<Student[]> {
+  async list(params?: { classroom?: string; level?: string; search?: string }): Promise<Student[]> {
     if (USE_FIXTURES) {
       let data = [...STUDENTS];
-      if (params?.classroom) data = data.filter((s) => s.classroom === params.classroom);
+      if (params?.classroom) data = data.filter((s) => s.level === params.classroom);
+      if (params?.level)     data = data.filter((s) => s.level === params.level);
       if (params?.search) {
         const q = params.search.toLowerCase();
         data = data.filter(
           (s) =>
             s.name.toLowerCase().includes(q) ||
             s.admissionNo.toLowerCase().includes(q) ||
-            s.parent.toLowerCase().includes(q)
+            s.email.toLowerCase().includes(q)
         );
       }
       return fixtureDelay(data);
@@ -47,7 +48,7 @@ export const studentService = {
           (s) =>
             s.name.toLowerCase().includes(q) ||
             s.admissionNo.toLowerCase().includes(q) ||
-            s.parent.toLowerCase().includes(q) ||
+            s.email.toLowerCase().includes(q) ||
             s.phone.includes(q)
         )
       );

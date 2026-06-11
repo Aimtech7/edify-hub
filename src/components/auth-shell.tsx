@@ -19,8 +19,8 @@ export function AuthShell({ title, subtitle, children, footer }: { title: string
           </div>
         </Link>
         <div className="relative max-w-md">
-          <h2 className="font-display text-4xl font-bold leading-tight">One portal for learning, finance and operations.</h2>
-          <p className="mt-4 opacity-85">From admission to alumni — Horizon keeps every record in step.</p>
+          <h2 className="font-display text-4xl font-bold leading-tight">Your German learning journey, beautifully managed.</h2>
+          <p className="mt-4 opacity-85">Track your CEFR progression, manage fees, and access assessments — all in one place.</p>
         </div>
         <div className="relative text-xs opacity-75">© {new Date().getFullYear()} {INSTITUTION.name}</div>
       </div>

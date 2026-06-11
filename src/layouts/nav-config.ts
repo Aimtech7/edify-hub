@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   BookCopy,
   ScrollText,
+  TrendingUp,
 } from "lucide-react";
 import type { Role } from "@/types";
 
@@ -32,17 +33,18 @@ export interface NavGroup {
 export const NAV: Record<Role, NavGroup[]> = {
   student: [
     {
-      label: "Overview",
+      label: "Mein Kurs",
       items: [
-        { to: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
-        { to: "/app/results", label: "Academic Results", icon: FileBarChart2 },
+        { to: "/app/dashboard", label: "Dashboard",      icon: LayoutDashboard },
+        { to: "/app/levels",    label: "My Progress",    icon: TrendingUp },
+        { to: "/app/results",   label: "Results",        icon: FileBarChart2 },
       ],
     },
     {
-      label: "Finance",
+      label: "Finanzen",
       items: [
-        { to: "/app/finance", label: "Fee Statement", icon: Wallet },
-        { to: "/app/receipts", label: "My Receipts", icon: ReceiptText },
+        { to: "/app/finance",   label: "Fee Statement",  icon: Wallet },
+        { to: "/app/receipts",  label: "My Receipts",    icon: ReceiptText },
       ],
     },
     {
@@ -54,17 +56,18 @@ export const NAV: Record<Role, NavGroup[]> = {
     {
       label: "Teaching",
       items: [
-        { to: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
-        { to: "/app/students", label: "Students", icon: Users },
-        { to: "/app/marks", label: "Marks Entry", icon: ClipboardEdit },
-        { to: "/app/results", label: "Results", icon: FileBarChart2 },
+        { to: "/app/dashboard",  label: "Dashboard",        icon: LayoutDashboard },
+        { to: "/app/students",   label: "Students",          icon: Users },
+        { to: "/app/levels",     label: "Language Levels",   icon: TrendingUp },
+        { to: "/app/marks",      label: "Marks Entry",       icon: ClipboardEdit },
+        { to: "/app/results",    label: "Results",           icon: FileBarChart2 },
       ],
     },
     {
       label: "Operations",
       items: [
-        { to: "/app/attendance", label: "Attendance", icon: CalendarCheck2 },
-        { to: "/app/reports", label: "Reports", icon: BarChart3 },
+        { to: "/app/attendance", label: "Attendance",        icon: CalendarCheck2 },
+        { to: "/app/reports",    label: "Reports",           icon: BarChart3 },
       ],
     },
     {
@@ -76,10 +79,10 @@ export const NAV: Record<Role, NavGroup[]> = {
     {
       label: "Finance",
       items: [
-        { to: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
-        { to: "/app/payments", label: "Payments", icon: CreditCard },
-        { to: "/app/allocations", label: "Allocations", icon: Layers3 },
-        { to: "/app/receipts", label: "Receipts", icon: ReceiptText },
+        { to: "/app/dashboard",       label: "Dashboard",       icon: LayoutDashboard },
+        { to: "/app/payments",        label: "Payments",        icon: CreditCard },
+        { to: "/app/allocations",     label: "Allocations",     icon: Layers3 },
+        { to: "/app/receipts",        label: "Receipts",        icon: ReceiptText },
         { to: "/app/finance-reports", label: "Finance Reports", icon: FileSpreadsheet },
       ],
     },
@@ -92,22 +95,23 @@ export const NAV: Record<Role, NavGroup[]> = {
     {
       label: "Administration",
       items: [
-        { to: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
-        { to: "/app/users", label: "User Management", icon: Users },
-        { to: "/app/roles", label: "Roles", icon: ShieldCheck },
+        { to: "/app/dashboard", label: "Dashboard",       icon: LayoutDashboard },
+        { to: "/app/users",     label: "User Management", icon: Users },
+        { to: "/app/roles",     label: "Roles",           icon: ShieldCheck },
       ],
     },
     {
       label: "Academic",
       items: [
-        { to: "/app/academic", label: "Academic Setup", icon: BookCopy },
-        { to: "/app/fee-structure", label: "Fee Structures", icon: Wallet },
+        { to: "/app/levels",        label: "Language Levels",  icon: TrendingUp },
+        { to: "/app/academic",      label: "Academic Setup",   icon: BookCopy },
+        { to: "/app/fee-structure", label: "Fee Structure",    icon: Wallet },
       ],
     },
     {
       label: "System",
       items: [
-        { to: "/app/settings", label: "Settings", icon: Settings },
+        { to: "/app/settings",   label: "Settings",   icon: Settings },
         { to: "/app/audit-logs", label: "Audit Logs", icon: ScrollText },
       ],
     },

@@ -11,6 +11,9 @@ export {
   RECEIPTS,
   FEE_CATEGORIES,
   CLASSES,
+  CEFR_LEVELS,
+  CEFR_LEVEL_INFO,
+  BATCHES,
   TEACHER_CLASSES,
   ATTENDANCE_RECENT,
   USERS,
@@ -25,28 +28,28 @@ export const ACADEMIC_YEARS = [
 ];
 
 export const PAYMENTS: Payment[] = [
-  { id: "pay-001", date: "2025-05-14", studentId: "s1", studentName: "Amani Wanjiru", admissionNo: "ADM-2024-1042", payer: "Mr. Wanjiru", amount: 25000, method: "M-Pesa", reference: "QGH7K2L9", notes: "", allocated: true },
-  { id: "pay-002", date: "2025-05-12", studentId: "s2", studentName: "Baraka Odhiambo", admissionNo: "ADM-2024-1198", payer: "Mrs. Odhiambo", amount: 18000, method: "Bank", reference: "TRF-88201", notes: "", allocated: false },
-  { id: "pay-003", date: "2025-05-10", studentId: "s3", studentName: "Cynthia Mutua", admissionNo: "ADM-2023-0561", payer: "Mr. Mutua", amount: 30000, method: "Cheque", reference: "CHQ-00412", notes: "", allocated: true },
+  { id: "pay-001", date: "2025-05-14", studentId: "s1", studentName: "Amani Wanjiru",  admissionNo: "DA-2024-1042", payer: "Mr. Wanjiru",  amount: 20000, method: "M-Pesa",  reference: "QGH7K2L9",  notes: "", allocated: true  },
+  { id: "pay-002", date: "2025-05-12", studentId: "s3", studentName: "Cynthia Njoki",  admissionNo: "DA-2024-1044", payer: "Mr. Njoki",   amount: 18000, method: "Bank",    reference: "TRF-88201", notes: "", allocated: false },
+  { id: "pay-003", date: "2025-05-10", studentId: "s6", studentName: "Felix Kiprop",   admissionNo: "DA-2023-0872", payer: "Mrs. Kiprop", amount: 20000, method: "Cheque",  reference: "CHQ-00412", notes: "", allocated: true  },
 ];
 
 export const REVENUE_TREND = [
-  { month: "Jan", amount: 420000 },
-  { month: "Feb", amount: 380000 },
-  { month: "Mar", amount: 510000 },
-  { month: "Apr", amount: 460000 },
-  { month: "May", amount: 390000 },
+  { month: "Jan", amount: 280000 },
+  { month: "Feb", amount: 320000 },
+  { month: "Mar", amount: 410000 },
+  { month: "Apr", amount: 375000 },
+  { month: "May", amount: 290000 },
 ];
 
 export const TERM_PERFORMANCE = [
-  { term: "Term 1 2024", mean: 72.4, position: 8 },
-  { term: "Term 2 2024", mean: 75.1, position: 6 },
-  { term: "Term 3 2024", mean: 77.8, position: 5 },
-  { term: "Term 1 2025", mean: 79.4, position: 4 },
+  { term: "Module 1 2024",  mean: 72.4, position: 8 },
+  { term: "Module 2 2024",  mean: 75.1, position: 6 },
+  { term: "Module 3 2024",  mean: 78.8, position: 5 },
+  { term: "Module 1 2025",  mean: 80.2, position: 3 },
 ];
 
 export const UPCOMING_EXAMS = [
-  { subject: "Mathematics", date: "2025-07-01", time: "08:00", venue: "Main Hall" },
-  { subject: "English", date: "2025-07-02", time: "10:00", venue: "Block B" },
-  { subject: "Physics", date: "2025-07-03", time: "08:00", venue: "Lab Wing" },
+  { subject: "Sprechen",  date: "2025-07-01", time: "08:00", venue: "Room A" },
+  { subject: "Hören",     date: "2025-07-02", time: "10:00", venue: "Lab Wing" },
+  { subject: "Schreiben", date: "2025-07-03", time: "08:00", venue: "Room B" },
 ];

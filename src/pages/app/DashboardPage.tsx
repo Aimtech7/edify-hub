@@ -37,9 +37,10 @@ function StudentDash() {
         title={`Willkommen, ${user.name.split(" ")[0]}`}
         description={`Level ${me.level} · ${me.batch} · ${me.admissionNo}`}
       />
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <StatCard label="Current Level" value={me.level} hint={levelInfo.band} tone="info" icon={<GraduationCap className="size-5" />} />
         <StatCard label="Levels Completed" value={`${completed} of 6`} tone="success" icon={<Award className="size-5" />} />
+        <StatCard label="Attendance Rate" value="93.3%" tone="success" icon={<Activity className="size-5" />} />
         <StatCard label="Total Fees" value={currency(me.totalFees)} icon={<Wallet className="size-5" />} />
         <StatCard label="Balance Due" value={currency(balance)} tone={balance > 0 ? "warning" : "success"} icon={<Clock className="size-5" />} />
       </div>
@@ -97,32 +98,72 @@ function StudentDash() {
         </Card>
       </div>
 
-      {/* Level progression mini-timeline */}
-      <Card className="mt-6 shadow-card">
-        <CardContent className="p-6">
-          <h3 className="font-semibold mb-4">My CEFR progression</h3>
-          <div className="flex items-center gap-0 flex-wrap">
-            {(["A1", "A2", "B1", "B2", "C1", "C2"] as const).map((lvl, i) => {
-              const event = me.progressionHistory.find((e) => e.level === lvl);
-              const status = event?.status ?? "upcoming";
-              return (
-                <div key={lvl} className="flex items-center">
-                  <div className={`flex flex-col items-center`}>
-                    <div className={`size-10 rounded-full border-2 grid place-items-center text-xs font-bold transition-colors
-                      ${status === "completed" ? "bg-success/15 border-success text-success" :
-                        status === "active" ? "gradient-primary text-primary-foreground border-primary" :
-                        "bg-muted/40 border-border text-muted-foreground"}`}>
-                      {lvl}
+      {/* Level progression timeline & textual summary side-by-side */}
+      <div className="grid lg:grid-cols-3 gap-4 mt-6">
+        <Card className="lg:col-span-2 shadow-card">
+          <CardContent className="p-6">
+            <h3 className="font-semibold mb-4">My CEFR progression</h3>
+            <div className="flex items-center gap-0 flex-wrap py-2">
+              {(["A1", "A2", "B1", "B2", "C1", "C2"] as const).map((lvl, i) => {
+                const event = me.progressionHistory.find((e) => e.level === lvl);
+                const status = event?.status ?? "upcoming";
+                return (
+                  <div key={lvl} className="flex items-center">
+                    <div className="flex flex-col items-center">
+                      <div className={`size-10 rounded-full border-2 grid place-items-center text-xs font-bold transition-colors
+                        ${status === "completed" ? "bg-success/15 border-success text-success" :
+                          status === "active" ? "gradient-primary text-primary-foreground border-primary" :
+                          "bg-muted/40 border-border text-muted-foreground"}`}>
+                        {lvl}
+                      </div>
+                      <div className="text-[10px] mt-1 text-muted-foreground capitalize">{status === "upcoming" ? "" : status}</div>
                     </div>
-                    <div className="text-[10px] mt-1 text-muted-foreground capitalize">{status === "upcoming" ? "" : status}</div>
+                    {i < 5 && <div className={`w-6 sm:w-12 h-0.5 mx-0.5 mb-4 ${status === "completed" ? "bg-success" : "bg-border"}`} />}
                   </div>
-                  {i < 5 && <div className={`w-8 h-0.5 mx-0.5 mb-4 ${status === "completed" ? "bg-success" : "bg-border"}`} />}
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-card">
+          <CardContent className="p-6">
+            <h3 className="font-semibold mb-3">Progress Path</h3>
+            <div className="space-y-3 text-sm">
+              <div>
+                <div className="text-xs text-muted-foreground font-medium uppercase">Completed:</div>
+                <div className="flex gap-1.5 mt-1 flex-wrap">
+                  {me.progressionHistory.filter((e) => e.status === "completed").map((e) => (
+                    <Badge key={e.level} variant="secondary" className="bg-success/10 text-success border-success/20">
+                      ✓ {e.level}
+                    </Badge>
+                  ))}
+                  {me.progressionHistory.filter((e) => e.status === "completed").length === 0 && (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  )}
                 </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
+              </div>
+              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border">
+                <div>
+                  <div className="text-xs text-muted-foreground font-medium uppercase">Current:</div>
+                  <Badge className="mt-1 gradient-primary text-primary-foreground border-transparent">
+                    {me.level}
+                  </Badge>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground font-medium uppercase">Next Level:</div>
+                  <Badge variant="outline" className="mt-1">
+                    {(() => {
+                      const idx = ["A1", "A2", "B1", "B2", "C1", "C2"].indexOf(me.level);
+                      return idx >= 0 && idx < 5 ? ["A1", "A2", "B1", "B2", "C1", "C2"][idx + 1] : "Max Level Reached";
+                    })()}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       <Card className="mt-6 shadow-card">
         <CardContent className="p-6">

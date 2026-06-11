@@ -1,0 +1,45 @@
+import type { Role } from "@/types";
+
+export const roleHome: Record<Role, string> = {
+  student: "/app/dashboard",
+  teacher: "/app/dashboard",
+  accountant: "/app/dashboard",
+  admin: "/app/dashboard",
+};
+
+export const roleLabel: Record<Role, string> = {
+  student: "Student",
+  teacher: "Teacher",
+  accountant: "Accountant",
+  admin: "Administrator",
+};
+
+/**
+ * Defines which roles may access each app route. Used by RoleRoute guards.
+ * Finance modules (payments, allocations) are accountant-only. Receipts are
+ * available to accountants (full management) and students (own receipts).
+ */
+export const routeAccess: Record<string, Role[]> = {
+  "/app/dashboard": ["student", "teacher", "accountant", "admin"],
+  "/app/profile": ["student", "teacher", "accountant", "admin"],
+  // Student
+  "/app/results": ["student", "teacher"],
+  "/app/finance": ["student"],
+  "/app/receipts": ["student", "accountant"],
+  // Teacher
+  "/app/students": ["teacher", "admin"],
+  "/app/marks": ["teacher"],
+  "/app/attendance": ["teacher"],
+  "/app/reports": ["teacher"],
+  // Accountant (finance-only)
+  "/app/payments": ["accountant"],
+  "/app/allocations": ["accountant"],
+  "/app/finance-reports": ["accountant"],
+  // Admin
+  "/app/users": ["admin"],
+  "/app/roles": ["admin"],
+  "/app/academic": ["admin"],
+  "/app/fee-structure": ["admin"],
+  "/app/settings": ["admin"],
+  "/app/audit-logs": ["admin"],
+};

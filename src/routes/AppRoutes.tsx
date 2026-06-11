@@ -32,6 +32,7 @@ import FinanceReportsPage from "@/pages/app/FinanceReportsPage";
 import MarksPage from "@/pages/app/MarksPage";
 import ReportsPage from "@/pages/app/ReportsPage";
 import ProfilePage from "@/pages/app/ProfilePage";
+import CertificatesPage from "@/pages/app/CertificatesPage";
 
 export default function AppRoutes() {
   return (
@@ -58,6 +59,14 @@ export default function AppRoutes() {
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="profile"   element={<ProfilePage />} />
         <Route path="results"   element={<ResultsPage />} />
+        <Route
+          path="certificates"
+          element={
+            <RoleProtectedRoute allowed={["student", "teacher", "admin"]}>
+              <CertificatesPage />
+            </RoleProtectedRoute>
+          }
+        />
         <Route
           path="receipts"
           element={

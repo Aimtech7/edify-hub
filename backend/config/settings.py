@@ -88,8 +88,14 @@ DB_PASSWORD = os.getenv("DB_PASSWORD", "horizon_password")
 DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_PORT = os.getenv("DB_PORT", "5432")
 
+import dj_database_url
+
 # If postgres env variables are explicitly defined, use postgres; otherwise fallback to sqlite
-if os.getenv("DB_NAME") and not DEBUG:
+if os.getenv("DATABASE_URL"):
+    DATABASES = {
+        "default": dj_database_url.config(default=os.getenv("DATABASE_URL"), conn_max_age=600)
+    }
+elif os.getenv("DB_NAME") and os.getenv("DB_NAME") != "sqlite3":
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",

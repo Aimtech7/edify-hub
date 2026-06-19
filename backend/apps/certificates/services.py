@@ -1,11 +1,14 @@
 import io
+from django.conf import settings
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import landscape, A4
-from reportlab.lib.units import inch
+from reportlab.lib.units import inch, mm
 from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER
+from reportlab.graphics.barcode import qr
+from reportlab.graphics.shapes import Drawing
 
 class PDFService:
     @staticmethod
@@ -34,7 +37,7 @@ class PDFService:
         elements.append(Paragraph(f"has successfully completed the German Language Course for", center_normal))
         elements.append(Spacer(1, 0.2 * inch))
         
-        elements.append(Paragraph(f"<b>CEFR Level {certificate.level.name}</b>", center_heading))
+        elements.append(Paragraph(f"<b>CEFR Level {certificate.level.code}</b>", center_heading))
         elements.append(Spacer(1, 0.5 * inch))
         
         elements.append(Paragraph(f"Date of Issue: {certificate.issue_date}", center_normal))
@@ -42,7 +45,23 @@ class PDFService:
         
         elements.append(Paragraph(f"Certificate No: {certificate.certificate_number}", center_normal))
         elements.append(Spacer(1, 0.1 * inch))
-        elements.append(Paragraph(f"Verification Code: {certificate.verification_code}", center_normal))
+        
+        # QR Code Generation
+        # Assuming frontend runs on localhost:5173 for testing, or production domain
+        base_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5173')
+        verify_url = f"{base_url}/verify/{certificate.certificate_number}"
+        
+        qr_code = qr.QrCodeWidget(verify_url)
+        bounds = qr_code.getBounds()
+        width = bounds[2] - bounds[0]
+        height = bounds[3] - bounds[1]
+        d = Drawing(100, 100, transform=[100/width,0,0,100/height,0,0])
+        d.add(qr_code)
+        
+        elements.append(d)
+        elements.append(Spacer(1, 0.1 * inch))
+        
+        elements.append(Paragraph(f"Scan to Verify", center_normal))
 
         doc.build(elements)
         buffer.seek(0)

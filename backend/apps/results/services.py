@@ -15,7 +15,8 @@ class PDFService:
         styles = getSampleStyleSheet()
 
         # Header
-        elements.append(Paragraph("<b>Horizon LMS - Student Result Slip</b>", styles['Title']))
+        elements.append(Paragraph("<b>HORIZON DEUTSCH TRAINING INSTITUTE</b>", styles['Title']))
+        elements.append(Paragraph("Official Result Slip", styles['Heading3']))
         elements.append(Spacer(1, 0.2 * inch))
 
         # Student Info

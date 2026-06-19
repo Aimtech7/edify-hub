@@ -165,8 +165,8 @@ class ReceiptViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=True, methods=['get'])
     def download_pdf(self, request, pk=None):
         receipt = self.get_object()
-        from finance.services import PDFService
-        pdf_buffer = PDFService.generate_receipt_pdf(receipt)
+        from finance.services.pdf_service import FinancePDFService
+        pdf_buffer = FinancePDFService.generate_receipt_pdf(receipt)
         
         from django.http import HttpResponse
         response = HttpResponse(pdf_buffer.getvalue(), content_type='application/pdf')

@@ -84,6 +84,15 @@ class ResultViewSet(viewsets.ModelViewSet):
             f"Published academic result for student {result.student.admission_number} at Level {result.level.code}",
             request
         )
+        
+        # Send Notification
+        from notifications.services import NotificationService
+        NotificationService.notify_user(
+            user=result.student.user,
+            title="Result Published",
+            message=f"Dear {result.student.first_name}, your result for Level {result.level.code} has been published. You scored an average of {result.average_score}%.",
+            send_email=True
+        )
         return Response({"message": "Result successfully published."}, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['get'])

@@ -25,6 +25,24 @@ class CertificateViewSet(viewsets.ModelViewSet):
             return [permissions.IsAuthenticated()]
         return [IsAdminUser()]
 
+    def perform_create(self, serializer):
+        certificate = serializer.save()
+        from audits.models import log_action
+        log_action(
+            self.request.user,
+            f"Issued Level {certificate.level.code} certificate to {certificate.student.admission_number}",
+            self.request
+        )
+        
+        # Send Notification
+        from notifications.services import NotificationService
+        NotificationService.notify_user(
+            user=certificate.student.user,
+            title="Certificate Issued",
+            message=f"Congratulations {certificate.student.first_name}! Your certificate for Level {certificate.level.code} has been issued.",
+            send_email=True
+        )
+
     def get_queryset(self):
         user = self.request.user
         if user.role == 'STUDENT':

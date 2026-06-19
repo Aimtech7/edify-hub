@@ -441,8 +441,18 @@ def allocation_post_save(sender, instance, created, **kwargs):
         
         # Mark receipt as final
         if hasattr(payment, 'receipt'):
-            payment.receipt.status = Receipt.Status.FINAL
-            payment.receipt.save(update_fields=['status'])
+            if payment.receipt.status != Receipt.Status.FINAL:
+                payment.receipt.status = Receipt.Status.FINAL
+                payment.receipt.save(update_fields=['status'])
+                
+                # Send Notification
+                from notifications.services import NotificationService
+                NotificationService.notify_user(
+                    user=payment.student.user,
+                    title="Payment Receipt Generated",
+                    message=f"Dear {payment.student.first_name}, your payment of KES {payment.amount} has been allocated. Receipt {payment.receipt.receipt_number} is now available.",
+                    send_email=True
+                )
 
 class PaymentPlan(SoftDeleteModel):
     class Status(models.TextChoices):

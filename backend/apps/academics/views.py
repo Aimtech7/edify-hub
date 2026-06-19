@@ -36,6 +36,24 @@ class PromotionHistoryViewSet(viewsets.ModelViewSet):
             return [permissions.IsAuthenticated()]
         return [IsAdminUser()]
 
+    def perform_create(self, serializer):
+        promotion = serializer.save()
+        from audits.models import log_action
+        log_action(
+            self.request.user,
+            f"Promoted {promotion.student.admission_number} from {promotion.previous_level.code} to {promotion.new_level.code}",
+            self.request
+        )
+        
+        # Send Notification
+        from notifications.services import NotificationService
+        NotificationService.notify_user(
+            user=promotion.student.user,
+            title="Level Promotion",
+            message=f"Congratulations! You have been promoted to Level {promotion.new_level.code}. Keep up the great work!",
+            send_email=True
+        )
+
     def get_queryset(self):
         user = self.request.user
         if user.role == 'STUDENT':

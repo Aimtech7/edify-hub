@@ -6,7 +6,7 @@ export const TOKEN_KEYS = {
 };
 
 export const apiClient = axios.create({
-  baseURL: "/api",
+  baseURL: import.meta.env.VITE_API_URL || "/api",
   headers: { "Content-Type": "application/json" },
 });
 
@@ -40,7 +40,8 @@ apiClient.interceptors.response.use(
       if (refreshToken) {
         try {
           // Call Django REST Framework JWT token refresh endpoint
-          const { data } = await axios.post<{ access: string }>("/api/auth/token/refresh/", {
+          const baseURL = import.meta.env.VITE_API_URL || "/api";
+          const { data } = await axios.post<{ access: string }>(`${baseURL}/auth/token/refresh/`, {
             refresh: refreshToken,
           });
           

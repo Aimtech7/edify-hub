@@ -56,6 +56,9 @@ export default function ProfilePage() {
                 <Item label="Current Level"    value={`${student.level} — ${CEFR_LEVEL_INFO[student.level].label}`} />
                 <Item label="Batch / Cohort"   value={student.batch} />
                 <Item label="Instructor"       value={student.instructor} />
+                <Item label="Intake"           value={(student as any).intake || "January 2026 Intake"} />
+                <Item label="Career Pathway"   value={(student as any).careerPathway || "Ausbildung"} />
+                <Item label="Academic Advisor" value={(student as any).advisor || "Unassigned"} />
                 <Item label="Gender"           value={student.gender === "F" ? "Female" : "Male"} />
                 <Item label="Nationality"      value={student.nationality} icon={<Globe className="size-3.5" />} />
                 <Item label="Enrolled"         value={student.enrolledDate} />

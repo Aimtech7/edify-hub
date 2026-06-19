@@ -34,10 +34,13 @@ import ReportsPage from "@/pages/app/ReportsPage";
 import ProfilePage from "@/pages/app/ProfilePage";
 import CertificatesPage from "@/pages/app/CertificatesPage";
 
+import PublicVerifyPage from "@/pages/PublicVerifyPage";
+
 export default function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
+      <Route path="/verify/:certNo?" element={<PublicVerifyPage />} />
 
       <Route path="/login/student" element={<LoginStudentPage />} />
       <Route path="/login/staff" element={<LoginStaffPage />} />

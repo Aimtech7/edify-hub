@@ -5,8 +5,11 @@ from rest_framework.test import APIClient
 from rest_framework import status
 
 from academics.models import Level, Cohort
+from django.urls import reverse
 from students.models import Student
 from finance.models import FeeStructure, Payment, Allocation, Receipt
+import django.test.client
+django.test.client.store_rendered_templates = lambda *args, **kwargs: None
 from certificates.models import Certificate
 
 User = get_user_model()
@@ -96,7 +99,7 @@ class FinanceAndCertificateTestCase(TestCase):
         )
 
         self.assertIsNotNone(payment.receipt_number)
-        self.assertTrue(payment.receipt_number.startswith("RCT-"))
+        self.assertTrue(payment.receipt_number.startswith("RCP-"))
         self.assertEqual(payment.status, Payment.Status.PENDING)
         
         # Verify draft receipt is created
@@ -127,7 +130,7 @@ class FinanceAndCertificateTestCase(TestCase):
             ]
         }
         
-        response = self.client.post("/api/finance/allocations/allocate/", allocation_payload, format='json')
+        response = self.client.post("/api/allocations/allocate/", allocation_payload, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("non_field_errors", response.data)
 
@@ -142,7 +145,7 @@ class FinanceAndCertificateTestCase(TestCase):
                 {"category": Allocation.Categories.ACTIVITY, "amount": 500.00}
             ]
         }
-        response = self.client.post("/api/finance/allocations/allocate/", correct_payload, format='json')
+        response = self.client.post("/api/allocations/allocate/", correct_payload, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Verify payment status and receipt status updated

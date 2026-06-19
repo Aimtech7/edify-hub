@@ -1,4 +1,5 @@
 from io import BytesIO
+from django.conf import settings
 from django.http import HttpResponse
 from rest_framework import viewsets, permissions, status
 from rest_framework.views import APIView
@@ -8,6 +9,8 @@ from reportlab.lib.pagesizes import letter, landscape
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
+from reportlab.graphics.shapes import Drawing
+from reportlab.graphics.barcode import qr
 
 from certificates.models import Certificate
 from certificates.serializers import CertificateSerializer, CertificateVerifySerializer
@@ -128,15 +131,28 @@ class CertificateViewSet(viewsets.ModelViewSet):
         story.append(Paragraph(completion_text, text_style))
         story.append(Spacer(1, 10))
 
+        # Generate QR Code
+        # We assume the frontend will be hosted at this address (configurable via settings ideally)
+        base_url = getattr(settings, 'FRONTEND_URL', 'https://verify.deutschakademie.co.ke')
+        verify_url = f"{base_url}/verify/{certificate.certificate_number}"
+        
+        qr_code = qr.QrCodeWidget(verify_url)
+        qr_code.barWidth = 80
+        qr_code.barHeight = 80
+        
+        d = Drawing(80, 80)
+        d.add(qr_code)
+
         # Bottom Signatures & Serial Table
         sig_data = [
             [
                 Paragraph(f"<b>Issue Date:</b><br/>{certificate.issue_date.strftime('%B %d, %Y')}", meta_style),
                 Paragraph(f"<b>Certificate Serial:</b><br/>{certificate.certificate_number}", serial_style),
-                Paragraph("<b>Authorized By:</b><br/>Horizon Deutsch Institute Board", meta_style)
+                Paragraph("<b>Authorized By:</b><br/>Horizon Deutsch Institute Board", meta_style),
+                d
             ]
         ]
-        sig_table = Table(sig_data, colWidths=[200, 280, 200])
+        sig_table = Table(sig_data, colWidths=[150, 220, 150, 100])
         sig_table.setStyle(TableStyle([
             ('ALIGN', (0,0), (-1,-1), 'CENTER'),
             ('VALIGN', (0,0), (-1,-1), 'TOP'),

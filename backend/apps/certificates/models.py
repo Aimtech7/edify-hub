@@ -2,8 +2,13 @@ import uuid
 import datetime
 from django.db import models
 from django.conf import settings
+from students.models import SoftDeleteModel
 
-class Certificate(models.Model):
+class Certificate(SoftDeleteModel):
+    class Status(models.TextChoices):
+        ACTIVE = "ACTIVE", "Active"
+        REVOKED = "REVOKED", "Revoked"
+
     certificate_number = models.CharField(max_length=50, unique=True, blank=True)
     student = models.ForeignKey('students.Student', on_delete=models.CASCADE, related_name='certificates')
     level = models.ForeignKey('academics.Level', on_delete=models.PROTECT, related_name='certificates')
@@ -16,6 +21,7 @@ class Certificate(models.Model):
         related_name='certificates_issued'
     )
     verification_code = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    status = models.CharField(max_length=15, choices=Status.choices, default=Status.ACTIVE)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -53,6 +59,10 @@ class Certificate(models.Model):
             self.certificate_number = f"HZD-{level_code}-{year}-{next_id:06d}"
             
         super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        self.status = self.Status.REVOKED
+        super().delete(*args, **kwargs)
 
     def __str__(self):
         return f"{self.certificate_number} - {self.student.admission_number}"

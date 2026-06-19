@@ -1,0 +1,67 @@
+{
+    "student_count": 658,
+    "existing_student_numbers_sample": [
+        "CGHQ 2025/1",
+        "CGHQ 2025/2",
+        "CGHQ 2025/3",
+        "CGHQ 2025/4",
+        "CGHQ 2025/5",
+        "CGHQ 2025/6",
+        "CGHQ 2025/7",
+        "CGHQ 2025/8",
+        "CGHQ 2025/9",
+        "CGHQ 2025/10"
+    ],
+    "existing_levels": [
+        "B1",
+        "B2",
+        "A2",
+        "A1",
+        "A"
+    ],
+    "existing_campuses": [
+        "AMBWERE",
+        "KNP",
+        "CAPACITY",
+        "ONLINE",
+        "BGM MAIN "
+    ],
+    "existing_statuses": [
+        "DROPPED",
+        "COMPLETED",
+        "ONGOING",
+        "TO CONFIRM",
+        "ONGOING ONLINE",
+        "NEVER ATTENDED",
+        "ONLINE",
+        "KNP"
+    ],
+    "receipt_count": 239,
+    "existing_receipt_numbers_sample": [
+        408,
+        409,
+        410,
+        411,
+        412,
+        414,
+        415,
+        416,
+        419,
+        420
+    ],
+    "payment_purposes": [
+        "REGISTRATION",
+        "registration & TUITION FEE",
+        "TUITION FEE",
+        "REGISTRATION &TUITION FEE",
+        "ACCOMODATION",
+        "BOOKS",
+        "LUNCH PROGRAM",
+        "TUITION",
+        "ADMISSION FEE",
+        "APPLICATION FEE",
+        "S/FEE",
+        "OTHER",
+        "LUNCH"
+    ]
+}

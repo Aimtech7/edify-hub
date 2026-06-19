@@ -2,8 +2,8 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db.models import Q
-from students.models import Student, PlacementTest
-from students.serializers import StudentSerializer, PlacementTestSerializer
+from students.models import Student, PlacementTest, AdmissionApplication
+from students.serializers import StudentSerializer, PlacementTestSerializer, AdmissionApplicationSerializer
 from accounts.permissions import IsAdminUser, IsTeacher, IsAccountant
 
 class StudentViewSet(viewsets.ModelViewSet):
@@ -85,6 +85,49 @@ class StudentViewSet(viewsets.ModelViewSet):
         except Student.DoesNotExist:
             return Response({"detail": "Student profile not found for this user."}, status=status.HTTP_404_NOT_FOUND)
 
+    @action(detail=True, methods=['get'])
+    def timeline(self, request, pk=None):
+        student = self.get_object()
+        
+        timeline = []
+        
+        # Placement Tests
+        for pt in student.placement_tests.all().order_by('date_taken'):
+            timeline.append({
+                "date": pt.date_taken,
+                "type": "PLACEMENT_TEST",
+                "details": f"Score: {pt.score}, Recommended Level: {pt.recommended_level.code}"
+            })
+            
+        # Promotions
+        for promo in student.promotions.all().order_by('promotion_date'):
+            timeline.append({
+                "date": promo.promotion_date,
+                "type": "PROMOTION",
+                "details": f"Promoted from {promo.previous_level.code} to {promo.new_level.code}. Remarks: {getattr(promo, 'remarks', '')}"
+            })
+            
+        # Certificates
+        for cert in student.certificates.all().order_by('issue_date'):
+            timeline.append({
+                "date": cert.issue_date,
+                "type": "CERTIFICATE",
+                "details": f"Obtained Certificate for Level {cert.level.code} (No: {cert.certificate_number})"
+            })
+            
+        # Results
+        for res in student.results.filter(is_published=True).order_by('created_at'):
+            timeline.append({
+                "date": res.created_at.date(),
+                "type": "RESULT",
+                "details": f"Completed Level {res.level.code} with Avg {res.average_score}% ({res.grade})"
+            })
+            
+        # Sort all events by date
+        timeline.sort(key=lambda x: x['date'])
+        
+        return Response(timeline, status=status.HTTP_200_OK)
+
 class PlacementTestViewSet(viewsets.ModelViewSet):
     queryset = PlacementTest.objects.all().order_by('-date_taken')
     serializer_class = PlacementTestSerializer
@@ -100,3 +143,69 @@ class PlacementTestViewSet(viewsets.ModelViewSet):
         if user.role == 'STUDENT':
             return PlacementTest.objects.filter(student__user=user)
         return super().get_queryset()
+
+class AdmissionApplicationViewSet(viewsets.ModelViewSet):
+    queryset = AdmissionApplication.objects.all().order_by('-created_at')
+    serializer_class = AdmissionApplicationSerializer
+    
+    def get_permissions(self):
+        # Open to all for creation, restricted for viewing
+        if self.action == 'create':
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
+
+    def perform_create(self, serializer):
+        app = serializer.save()
+        from audits.models import log_action
+        if self.request.user.is_authenticated:
+            log_action(
+                self.request.user,
+                f"Created admission application for {app.applicant_name}",
+                self.request
+            )
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    def approve(self, request, pk=None):
+        app = self.get_object()
+        
+        if app.status == AdmissionApplication.Status.APPROVED:
+            return Response({"detail": "Already approved."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        if not app.documents_uploaded or not app.registration_fee_paid:
+            return Response({"detail": "Documents and fee must be verified before approval."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        # Approval converts application to student
+        serializer = StudentSerializer(data={
+            'first_name': app.applicant_name.split()[0],
+            'last_name': ' '.join(app.applicant_name.split()[1:]) if len(app.applicant_name.split()) > 1 else '',
+            'email': app.email,
+            'phone': app.phone,
+            'campus': app.campus.id if app.campus else None,
+            'current_level': app.recommended_level.id if app.recommended_level else None
+        }, context={'application': app})
+        
+        if serializer.is_valid():
+            serializer.save()
+            from audits.models import log_action
+            log_action(self.request.user, f"Approved admission for {app.applicant_name}", request)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['get'])
+    def analytics(self, request):
+        from django.db.models import Count
+        
+        campus_stats = Student.objects.values('campus__name').annotate(count=Count('id'))
+        level_stats = Student.objects.values('current_level__code').annotate(count=Count('id'))
+        intake_stats = Student.objects.values('intake__name').annotate(count=Count('id'))
+        pathway_stats = Student.objects.values('career_pathway__name').annotate(count=Count('id'))
+        referral_stats = Student.objects.values('referral_source').annotate(count=Count('id'))
+
+        return Response({
+            'by_campus': campus_stats,
+            'by_level': level_stats,
+            'by_intake': intake_stats,
+            'by_pathway': pathway_stats,
+            'by_referral': referral_stats,
+        })

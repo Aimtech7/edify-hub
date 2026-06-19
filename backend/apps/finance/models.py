@@ -1,9 +1,10 @@
 import datetime
-from django.db import models
+from django.db import models, transaction
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from students.models import SoftDeleteModel
 
-class FeeStructure(models.Model):
+class FeeStructure(SoftDeleteModel):
     level = models.ForeignKey('academics.Level', on_delete=models.PROTECT, related_name='fee_structures')
     academic_year = models.CharField(max_length=10) # e.g. "2025"
     
@@ -33,7 +34,7 @@ class FeeStructure(models.Model):
     def __str__(self):
         return f"{self.level.code} Fees ({self.academic_year}) - Total: {self.total_fee}"
 
-class Payment(models.Model):
+class Payment(SoftDeleteModel):
     class Methods(models.TextChoices):
         MPESA = "M-Pesa", "M-Pesa"
         CHEQUE = "Cheque", "Cheque"
@@ -49,6 +50,7 @@ class Payment(models.Model):
     receipt_number = models.CharField(max_length=50, unique=True, blank=True)
     student = models.ForeignKey('students.Student', on_delete=models.CASCADE, related_name='payments')
     payer_name = models.CharField(max_length=100)
+    payer_relationship = models.CharField(max_length=50, blank=True)
     phone_number = models.CharField(max_length=20)
     national_id = models.CharField(max_length=20, blank=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
@@ -70,38 +72,57 @@ class Payment(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
-        # Generate receipt number: RCT-000001
-        if not self.receipt_number:
-            last_pay = Payment.objects.exclude(receipt_number='').order_by('id').last()
-            next_id = 1
-            if last_pay and last_pay.receipt_number:
-                parts = last_pay.receipt_number.split('-')
-                if len(parts) == 2:
-                    try:
-                        next_id = int(parts[1]) + 1
-                    except ValueError:
-                        pass
-            self.receipt_number = f"RCT-{next_id:06d}"
+        with transaction.atomic():
+            current_year = datetime.date.today().year
             
-        # Generate generic transaction_id if none specified
-        if not self.transaction_id:
-            self.transaction_id = f"TXN-{datetime.datetime.now().strftime('%y%m%d%H%M%S%f')}"
+            # Generate transaction_id: TXN-YYYY-000001
+            if not self.transaction_id:
+                prefix = f"TXN-{current_year}-"
+                # Lock row if exists to prevent race condition
+                last_txn = Payment.objects.filter(transaction_id__startswith=prefix).select_for_update().order_by('-id').first()
+                next_id = 1
+                if last_txn and last_txn.transaction_id:
+                    parts = last_txn.transaction_id.split('-')
+                    if len(parts) == 3:
+                        try:
+                            next_id = int(parts[2]) + 1
+                        except ValueError:
+                            pass
+                self.transaction_id = f"{prefix}{next_id:06d}"
+
+            # Generate receipt number: RCP-YYYY-000001
+            if not self.receipt_number:
+                prefix = f"RCP-{current_year}-"
+                last_pay = Payment.objects.filter(receipt_number__startswith=prefix).select_for_update().order_by('-id').first()
+                next_id = 1
+                if last_pay and last_pay.receipt_number:
+                    parts = last_pay.receipt_number.split('-')
+                    if len(parts) == 3:
+                        try:
+                            next_id = int(parts[2]) + 1
+                        except ValueError:
+                            pass
+                self.receipt_number = f"{prefix}{next_id:06d}"
+                
+            super().save(*args, **kwargs)
             
-        super().save(*args, **kwargs)
-        
-        # Auto-create Draft Receipt
-        if not hasattr(self, 'receipt'):
-            Receipt.objects.create(
-                payment=self,
-                receipt_number=self.receipt_number,
-                issue_date=self.payment_date,
-                status=Receipt.Status.DRAFT
-            )
+            # Auto-create Draft Receipt
+            if not hasattr(self, 'receipt'):
+                Receipt.objects.create(
+                    payment=self,
+                    receipt_number=self.receipt_number,
+                    issue_date=self.payment_date,
+                    status=Receipt.Status.DRAFT
+                )
+
+    def delete(self, *args, **kwargs):
+        self.status = self.Status.CANCELLED
+        super().delete(*args, **kwargs)
 
     def __str__(self):
         return f"{self.receipt_number} - {self.student.admission_number} - {self.amount}"
 
-class Allocation(models.Model):
+class Allocation(SoftDeleteModel):
     class Categories(models.TextChoices):
         TUITION = "Tuition", "Course Tuition"
         EXAMINATION = "Examination", "Exam Registration"
@@ -117,10 +138,11 @@ class Allocation(models.Model):
     def __str__(self):
         return f"{self.payment.receipt_number} - {self.category}: {self.amount}"
 
-class Receipt(models.Model):
+class Receipt(SoftDeleteModel):
     class Status(models.TextChoices):
         DRAFT = "DRAFT", "Draft"
         FINAL = "FINAL", "Final"
+        VOID = "VOID", "Void"
 
     receipt_number = models.CharField(max_length=50, unique=True)
     payment = models.OneToOneField(Payment, on_delete=models.CASCADE, related_name='receipt')
@@ -128,5 +150,105 @@ class Receipt(models.Model):
     status = models.CharField(max_length=15, choices=Status.choices, default=Status.DRAFT)
     updated_at = models.DateTimeField(auto_now=True)
 
+    @property
+    def total_fees(self):
+        return self.payment.student.total_fees
+
+    @property
+    def total_paid(self):
+        return self.payment.student.total_paid
+
+    @property
+    def outstanding_balance(self):
+        return self.payment.student.outstanding_balance
+
+    @property
+    def current_payment(self):
+        return self.payment.amount
+
+    def delete(self, *args, **kwargs):
+        self.status = self.Status.VOID
+        super().delete(*args, **kwargs)
+
     def __str__(self):
         return f"{self.receipt_number} ({self.status})"
+
+class MpesaTransaction(SoftDeleteModel):
+    checkout_request_id = models.CharField(max_length=100, unique=True)
+    merchant_request_id = models.CharField(max_length=100, unique=True)
+    student = models.ForeignKey('students.Student', on_delete=models.SET_NULL, null=True, blank=True, related_name='mpesa_transactions')
+    mpesa_reference = models.CharField(max_length=50, blank=True, null=True)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    phone = models.CharField(max_length=20)
+    status = models.CharField(max_length=50, default='PENDING')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.checkout_request_id} - {self.status}"
+
+class StudentLedger(SoftDeleteModel):
+    class TransactionTypes(models.TextChoices):
+        FEE_CHARGE = "Fee Charge", "Fee Charge"
+        PAYMENT = "Payment", "Payment"
+        ALLOCATION = "Allocation", "Allocation"
+        ADJUSTMENT = "Adjustment", "Adjustment"
+        REFUND = "Refund", "Refund"
+        CREDIT = "Credit", "Credit"
+
+    student = models.ForeignKey('students.Student', on_delete=models.CASCADE, related_name='ledger_entries')
+    transaction_type = models.CharField(max_length=50, choices=TransactionTypes.choices)
+    amount = models.DecimalField(max_digits=10, decimal_places=2) # Always positive, logic determines effect on balance
+    transaction_date = models.DateTimeField(auto_now_add=True)
+    description = models.TextField()
+    reference_id = models.CharField(max_length=100, blank=True) # Could be receipt number, allocation id, fee structure id
+
+    def __str__(self):
+        return f"{self.student.admission_number} - {self.transaction_type} - {self.amount}"
+
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+@receiver(post_save, sender=Payment)
+def payment_post_save(sender, instance, created, **kwargs):
+    from finance.services import LedgerService
+    if instance.status != Payment.Status.CANCELLED:
+        LedgerService.record_payment(instance)
+
+@receiver(post_save, sender=FeeStructure)
+def feestruct_post_save(sender, instance, created, **kwargs):
+    from finance.services import LedgerService
+    from students.models import Student
+    # Apply to all students currently in this level
+    for student in Student.objects.filter(current_level=instance.level):
+        LedgerService.charge_fee(student, instance)
+
+class PaymentPlan(SoftDeleteModel):
+    class Status(models.TextChoices):
+        ACTIVE = "Active", "Active"
+        COMPLETED = "Completed", "Completed"
+        DEFAULTED = "Defaulted", "Defaulted"
+
+    student = models.ForeignKey('students.Student', on_delete=models.CASCADE, related_name='payment_plans')
+    fee_structure = models.ForeignKey(FeeStructure, on_delete=models.CASCADE)
+    total_fee = models.DecimalField(max_digits=10, decimal_places=2)
+    amount_paid = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def outstanding_balance(self):
+        return self.total_fee - self.amount_paid
+
+    def __str__(self):
+        return f"{self.student.admission_number} - {self.fee_structure.level.code} ({self.status})"
+
+class PaymentPlanInstallment(models.Model):
+    plan = models.ForeignKey(PaymentPlan, on_delete=models.CASCADE, related_name='installments')
+    amount_due = models.DecimalField(max_digits=10, decimal_places=2)
+    due_date = models.DateField()
+    is_paid = models.BooleanField(default=False)
+    paid_date = models.DateField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.plan.student.admission_number} - {self.amount_due} due {self.due_date}"

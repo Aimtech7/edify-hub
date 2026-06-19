@@ -102,10 +102,6 @@ class AllocationViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'], serializer_class=BulkAllocationSerializer)
     def allocate(self, request):
-        """
-        Processes bulk allocations. Validates that allocation sum matches payment amount exactly.
-        Changes payment status to ALLOCATED and receipt status to FINAL.
-        """
         serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -114,36 +110,36 @@ class AllocationViewSet(viewsets.ModelViewSet):
         allocations_data = serializer.validated_data['allocations']
         
         with transaction.atomic():
-            # Delete existing allocations to allow updates
+            # Delete existing allocations for this payment
             Allocation.objects.filter(payment=payment).delete()
             
-            # Save new allocations
+            # Create new allocations
+            allocations = []
             for item in allocations_data:
-                Allocation.objects.create(
+                allocations.append(Allocation(
                     payment=payment,
                     category=item['category'],
                     amount=item['amount']
-                )
-                
-            # Promote payment and receipt state
-            payment.status = Payment.Status.ALLOCATED
-            payment.save()
+                ))
+            Allocation.objects.bulk_create(allocations)
             
+            # Update payment status
+            payment.status = Payment.Status.ALLOCATED
+            payment.save(update_fields=['status'])
+            
+            # Update receipt status
             if hasattr(payment, 'receipt'):
-                receipt = payment.receipt
-                receipt.status = Receipt.Status.FINAL
-                receipt.save()
-
-        from audits.models import log_action
-        log_action(
-            request.user,
-            f"Allocated and finalized payment {payment.receipt_number} of amount {payment.amount} for student {payment.student.admission_number}",
-            request
-        )
+                payment.receipt.status = Receipt.Status.FINAL
+                payment.receipt.save(update_fields=['status'])
                 
-        return Response({
-            "message": "Payment allocations saved successfully. Receipt finalized."
-        }, status=status.HTTP_200_OK)
+            from audits.models import log_action
+            log_action(
+                request.user,
+                f"Allocated and finalized payment {payment.receipt_number} of amount {payment.amount} for student {payment.student.admission_number}",
+                request
+            )
+            
+        return Response({"message": "Allocations saved successfully"}, status=status.HTTP_200_OK)
 
 class ReceiptViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Receipt.objects.all().order_by('-issue_date')
@@ -166,6 +162,24 @@ class ReceiptViewSet(viewsets.ReadOnlyModelViewSet):
         )
         return super().retrieve(request, *args, **kwargs)
 
+    @action(detail=True, methods=['get'])
+    def download_pdf(self, request, pk=None):
+        receipt = self.get_object()
+        from finance.services import PDFService
+        pdf_buffer = PDFService.generate_receipt_pdf(receipt)
+        
+        from django.http import HttpResponse
+        response = HttpResponse(pdf_buffer.getvalue(), content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="Receipt_{receipt.receipt_number}.pdf"'
+        
+        from audits.models import log_action
+        log_action(
+            request.user,
+            f"Downloaded PDF for receipt {receipt.receipt_number}",
+            request
+        )
+        return response
+
 class FinanceReportsView(APIView):
     permission_classes = (IsAccountant,)
 
@@ -187,23 +201,15 @@ class FinanceReportsView(APIView):
             students = Student.objects.filter(status=Student.Status.ACTIVE)
             records = []
             for s in students:
-                total_fees = 0.00
-                if s.current_level:
-                    fee_struct = FeeStructure.objects.filter(level=s.current_level).first()
-                    if fee_struct:
-                        total_fees = float(fee_struct.total_fee)
-                        
-                total_paid = float(sum(p.amount for p in s.payments.filter(status=Payment.Status.ALLOCATED)))
-                balance = total_fees - total_paid
-                
+                balance = s.outstanding_balance
                 if balance > 0:
                     records.append({
                         "student_id": s.id,
                         "name": f"{s.first_name} {s.last_name}",
                         "admission_no": s.admission_number,
                         "level": s.current_level.code if s.current_level else "N/A",
-                        "total_fees": total_fees,
-                        "total_paid": total_paid,
+                        "total_fees": s.total_fees,
+                        "total_paid": s.total_paid,
                         "balance": balance
                     })
             return Response(records)
@@ -212,22 +218,15 @@ class FinanceReportsView(APIView):
             students = Student.objects.filter(status=Student.Status.ACTIVE)
             records = []
             for s in students:
-                total_fees = 0.00
-                if s.current_level:
-                    fee_struct = FeeStructure.objects.filter(level=s.current_level).first()
-                    if fee_struct:
-                        total_fees = float(fee_struct.total_fee)
-                        
-                total_paid = float(sum(p.amount for p in s.payments.filter(status=Payment.Status.ALLOCATED)))
-                balance = total_fees - total_paid
-                
+                total_fees = s.total_fees
+                balance = s.outstanding_balance
                 if balance <= 0 and total_fees > 0:
                     records.append({
                         "student_id": s.id,
                         "name": f"{s.first_name} {s.last_name}",
                         "admission_no": s.admission_number,
                         "total_fees": total_fees,
-                        "total_paid": total_paid
+                        "total_paid": s.total_paid
                     })
             return Response(records)
             
@@ -236,7 +235,152 @@ class FinanceReportsView(APIView):
             serializer = PaymentSerializer(unallocated, many=True)
             return Response(serializer.data)
             
+        elif report_type == 'monthly_collections':
+            # From 1st of month to today
+            today = datetime.date.today()
+            first_of_month = today.replace(day=1)
+            total = Payment.objects.filter(payment_date__gte=first_of_month, payment_date__lte=today, status=Payment.Status.ALLOCATED).aggregate(Sum('amount'))['amount__sum'] or 0.00
+            return Response({
+                "month": today.strftime('%Y-%m'),
+                "total_collections": total
+            })
+            
+        elif report_type == 'payment_methods':
+            today = datetime.date.today()
+            first_of_month = today.replace(day=1)
+            by_method = Payment.objects.filter(payment_date__gte=first_of_month, payment_date__lte=today).values('payment_method').annotate(total=Sum('amount'))
+            return Response(by_method)
+            
+        elif report_type == 'recent_receipts':
+            receipts = Receipt.objects.filter(status=Receipt.Status.FINAL).order_by('-updated_at')[:10]
+            serializer = ReceiptSerializer(receipts, many=True)
+            return Response(serializer.data)
+            
         return Response(
-            {"detail": "Invalid report type. Supported: daily_collections, outstanding_balances, fully_paid, unallocated_payments"},
+            {"detail": "Invalid report type. Supported: daily_collections, monthly_collections, outstanding_balances, fully_paid, unallocated_payments, payment_methods, recent_receipts"},
             status=status.HTTP_400_BAD_REQUEST
         )
+
+class STKPushView(APIView):
+    def post(self, request):
+        from finance.serializers import STKPushSerializer
+        from finance.services.mpesa import MpesaService
+        
+        serializer = STKPushSerializer(data=request.data)
+        if serializer.is_valid():
+            student = serializer.validated_data['student_id']
+            phone = serializer.validated_data['phone_number']
+            amount = serializer.validated_data['amount']
+
+            mpesa_service = MpesaService()
+            try:
+                result = mpesa_service.initiate_stk_push(
+                    phone=phone,
+                    amount=amount,
+                    account_reference=student.admission_number,
+                    transaction_desc=f"Fees {student.admission_number}"
+                )
+                
+                if result.get('success'):
+                    from finance.models import MpesaTransaction
+                    MpesaTransaction.objects.create(
+                        checkout_request_id=result['checkout_request_id'],
+                        merchant_request_id=result['merchant_request_id'],
+                        amount=amount,
+                        phone=phone,
+                        student=student,
+                        status='PENDING'
+                    )
+                    return Response(result, status=status.HTTP_200_OK)
+                else:
+                    return Response({"error": result.get("error")}, status=status.HTTP_400_BAD_REQUEST)
+
+            except Exception as e:
+                return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class MpesaCallbackView(APIView):
+    permission_classes = (permissions.AllowAny,)
+
+    def post(self, request):
+        """
+        Daraja API callback endpoint.
+        """
+        data = request.data
+        try:
+            body = data.get('Body', {}).get('stkCallback', {})
+            merchant_req_id = body.get('MerchantRequestID')
+            checkout_req_id = body.get('CheckoutRequestID')
+            result_code = body.get('ResultCode')
+            
+            from finance.models import MpesaTransaction, Payment
+            from django.db import transaction
+
+            if result_code == 0:
+                # Success
+                items = body.get('CallbackMetadata', {}).get('Item', [])
+                amount = next((item['Value'] for item in items if item['Name'] == 'Amount'), 0)
+                receipt_no = next((item['Value'] for item in items if item['Name'] == 'MpesaReceiptNumber'), '')
+                phone = next((item['Value'] for item in items if item['Name'] == 'PhoneNumber'), '')
+                
+                with transaction.atomic():
+                    mpesa_txn = MpesaTransaction.objects.filter(checkout_request_id=checkout_req_id).first()
+                    
+                    if mpesa_txn:
+                        mpesa_txn.merchant_request_id = merchant_req_id
+                        mpesa_txn.mpesa_reference = receipt_no
+                        mpesa_txn.amount = amount
+                        mpesa_txn.phone = phone
+                        mpesa_txn.status = 'COMPLETED'
+                        mpesa_txn.save()
+
+                        # Auto-reconcile payment if student exists
+                        if mpesa_txn.student and not Payment.objects.filter(mpesa_reference=receipt_no).exists():
+                            Payment.objects.create(
+                                student=mpesa_txn.student,
+                                amount=amount,
+                                payment_method=Payment.Methods.MPESA,
+                                mpesa_reference=receipt_no,
+                                payer_name=phone
+                            )
+                    else:
+                        MpesaTransaction.objects.create(
+                            checkout_request_id=checkout_req_id,
+                            merchant_request_id=merchant_req_id,
+                            mpesa_reference=receipt_no,
+                            amount=amount,
+                            phone=phone,
+                            status='COMPLETED'
+                        )
+            else:
+                # Failed
+                mpesa_txn = MpesaTransaction.objects.filter(checkout_request_id=checkout_req_id).first()
+                if mpesa_txn:
+                    mpesa_txn.merchant_request_id = merchant_req_id
+                    mpesa_txn.status = 'FAILED'
+                    mpesa_txn.save()
+                else:
+                    MpesaTransaction.objects.create(
+                        checkout_request_id=checkout_req_id,
+                        merchant_request_id=merchant_req_id,
+                        status='FAILED'
+                    )
+        except Exception as e:
+            pass # Usually you log this
+            
+        return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
+
+    @action(detail=False, methods=['get'])
+    def analytics(self, request):
+        from django.db.models import Sum
+        
+        revenue_by_campus = Payment.objects.values('student__campus__name').annotate(total=Sum('amount'))
+        revenue_by_level = Payment.objects.values('student__current_level__code').annotate(total=Sum('amount'))
+        revenue_by_intake = Payment.objects.values('student__intake__name').annotate(total=Sum('amount'))
+
+        return Response({
+            'by_campus': revenue_by_campus,
+            'by_level': revenue_by_level,
+            'by_intake': revenue_by_intake,
+        })

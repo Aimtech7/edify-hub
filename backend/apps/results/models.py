@@ -1,13 +1,18 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
+from students.models import SoftDeleteModel
 
-class Result(models.Model):
+class Result(SoftDeleteModel):
     class Grades(models.TextChoices):
         SEHR_GUT = "Sehr Gut", "Sehr Gut (Very Good)"
         GUT = "Gut", "Gut (Good)"
         BEFRIEDIGEND = "Befriedigend", "Befriedigend (Satisfactory)"
         AUSREICHEND = "Ausreichend", "Ausreichend (Sufficient)"
         NICHT_BESTANDEN = "Nicht Bestanden", "Nicht Bestanden (Fail)"
+
+    class Status(models.TextChoices):
+        ACTIVE = "ACTIVE", "Active"
+        INACTIVE = "INACTIVE", "Inactive"
 
     student = models.ForeignKey('students.Student', on_delete=models.CASCADE, related_name='results')
     level = models.ForeignKey('academics.Level', on_delete=models.PROTECT, related_name='results')
@@ -25,6 +30,7 @@ class Result(models.Model):
     grade = models.CharField(max_length=20, choices=Grades.choices, blank=True)
     remarks = models.TextField(blank=True) # Teacher comments (usually in German)
     is_published = models.BooleanField(default=False)
+    status = models.CharField(max_length=15, choices=Status.choices, default=Status.ACTIVE)
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -53,6 +59,10 @@ class Result(models.Model):
     def save(self, *args, **kwargs):
         self.calculate_average_and_grade()
         super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        self.status = self.Status.INACTIVE
+        super().delete(*args, **kwargs)
 
     def __str__(self):
         return f"{self.student.admission_number} - {self.level.code} - Avg: {self.average_score}"

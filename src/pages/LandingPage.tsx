@@ -3,7 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { INSTITUTION, COURSES, TESTIMONIALS, ANNOUNCEMENTS, CEFR_LEVELS, CEFR_LEVEL_INFO } from "@/lib/sample-data";
-import { GraduationCap, ShieldCheck, Sparkles, BookOpen, Users, Award, Phone, Mail, MapPin, ArrowRight, Calendar, TrendingUp } from "lucide-react";
+import { GraduationCap, ShieldCheck, Sparkles, BookOpen, Users, Award, Phone, Mail, MapPin, ArrowRight, Calendar, TrendingUp, HelpCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { apiClient } from "@/services/api-client";
 
 const BAND_COLORS: Record<string, string> = {
   Beginner:     "bg-blue-100 text-blue-700 border-blue-200",
@@ -12,6 +14,22 @@ const BAND_COLORS: Record<string, string> = {
 };
 
 export default function LandingPage() {
+  const [profile, setProfile] = useState<any>(null);
+
+  useEffect(() => {
+    // Attempt to load live profile from backend, fallback to constants
+    apiClient.get('/core/institution/profile/').then(res => {
+      setProfile(res.data);
+    }).catch(() => {
+      // Ignore
+    });
+  }, []);
+
+  const instName = profile?.name || INSTITUTION.name;
+  const instPhone = profile?.phone_primary || INSTITUTION.phone;
+  const instEmail = profile?.email_primary || INSTITUTION.email;
+  const instAddress = profile?.physical_address || INSTITUTION.address;
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-40 backdrop-blur-md bg-background/80 border-b border-border">
@@ -21,19 +39,20 @@ export default function LandingPage() {
               <GraduationCap className="size-5" />
             </div>
             <div className="leading-tight">
-              <div className="font-display font-bold text-base">{INSTITUTION.name}</div>
-              <div className="text-[11px] text-muted-foreground">German Language Institute · LMS & ERP</div>
+              <div className="font-display font-bold text-base">{instName}</div>
+              <div className="text-[11px] text-muted-foreground">German Language Institute</div>
             </div>
           </Link>
           <nav className="hidden md:flex items-center gap-7 text-sm text-muted-foreground">
-            <a href="#levels"        className="hover:text-foreground">CEFR Levels</a>
-            <a href="#programs"      className="hover:text-foreground">Programmes</a>
-            <a href="#announcements" className="hover:text-foreground">News</a>
+            <a href="#about"         className="hover:text-foreground">About Us</a>
+            <a href="#levels"        className="hover:text-foreground">Language Levels</a>
+            <a href="#programs"      className="hover:text-foreground">Career Pathways</a>
+            <a href="#campuses"      className="hover:text-foreground">Campuses</a>
             <a href="#contact"       className="hover:text-foreground">Contact</a>
           </nav>
           <div className="flex items-center gap-2">
             <Button asChild variant="ghost" size="sm"><Link to="/login/student">Student</Link></Button>
-            <Button asChild variant="ghost" size="sm"><Link to="/login/staff">Instructor</Link></Button>
+            <Button asChild variant="ghost" size="sm"><Link to="/login/staff">Staff</Link></Button>
             <Button asChild size="sm" className="gradient-primary text-primary-foreground"><Link to="/login/admin">Admin</Link></Button>
           </div>
         </div>
@@ -46,43 +65,29 @@ export default function LandingPage() {
         <div className="mx-auto max-w-7xl px-6 py-24 grid lg:grid-cols-12 gap-12 items-center">
           <div className="lg:col-span-7">
             <Badge variant="secondary" className="rounded-full px-3 py-1 mb-5">
-              <Sparkles className="size-3.5 mr-1.5" /> Est. {INSTITUTION.established} · CEFR A1 – C2 Certified
+              <Sparkles className="size-3.5 mr-1.5" /> Official German Certification Center
             </Badge>
             <h1 className="font-display font-extrabold text-5xl md:text-6xl leading-[1.05] tracking-tight">
               Mastering German,{" "}
               <span className="text-gradient">Opening Worlds</span>
             </h1>
             <p className="mt-5 text-lg text-muted-foreground max-w-xl">
-              {INSTITUTION.name} offers structured German language training from A1 to C2. Track your progression,
-              manage fees, and access results — all in one platform.
+              {instName} offers structured German language training from A1 to C2. Prepare for your future in Germany with our expert instructors and comprehensive career pathways.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild size="lg" className="gradient-primary text-primary-foreground shadow-elevated">
-                <Link to="/login/student">Student Portal <ArrowRight className="size-4 ml-1" /></Link>
+                <Link to="/login/student">Admissions Portal <ArrowRight className="size-4 ml-1" /></Link>
               </Button>
-              <Button asChild size="lg" variant="outline"><Link to="/login/staff">Instructor Login</Link></Button>
-              <Button asChild size="lg" variant="ghost"><Link to="/login/admin">Admin</Link></Button>
-            </div>
-            <div className="mt-10 grid grid-cols-3 gap-6 max-w-md">
-              {[
-                { k: "1,200+", v: "Active students" },
-                { k: "6",      v: "CEFR levels" },
-                { k: "98%",    v: "Pass rate" },
-              ].map((s) => (
-                <div key={s.k}>
-                  <div className="text-2xl font-display font-bold">{s.k}</div>
-                  <div className="text-xs text-muted-foreground">{s.v}</div>
-                </div>
-              ))}
+              <Button asChild size="lg" variant="outline"><a href="#programs">Explore Pathways</a></Button>
             </div>
           </div>
           <div className="lg:col-span-5 hidden lg:block">
             <div className="rounded-2xl bg-card border border-border shadow-elevated p-6 space-y-4">
               {[
-                { icon: ShieldCheck, t: "Role-based secure access",       d: "Student, Instructor, Accountant, Admin" },
-                { icon: TrendingUp,  t: "CEFR level progression tracking", d: "A1 → A2 → B1 → B2 → C1 → C2 with history" },
-                { icon: BookOpen,    t: "Language skills assessment",       d: "Sprechen, Hören, Lesen, Schreiben, Grammatik" },
-                { icon: Award,       t: "Certificates & Goethe prep",       d: "Official exam registration and certification" },
+                { icon: ShieldCheck, t: "Official Exam Prep",       d: "Goethe, ÖSD, TELC preparation" },
+                { icon: TrendingUp,  t: "Career Pathways", d: "Ausbildung, Au Pair, Study in Germany" },
+                { icon: BookOpen,    t: "Digital Library",       d: "Access to rich learning resources" },
+                { icon: Award,       t: "Verifiable Certificates",       d: "QR-code enabled authentic certificates" },
               ].map((f) => (
                 <div key={f.t} className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors">
                   <div className="size-9 rounded-md gradient-primary text-primary-foreground grid place-items-center flex-shrink-0">
@@ -99,11 +104,21 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* About Us */}
+      <section id="about" className="py-20 bg-muted/30">
+        <div className="mx-auto max-w-7xl px-6 text-center">
+          <h2 className="font-display font-bold text-3xl mb-4">About {instName}</h2>
+          <p className="max-w-3xl mx-auto text-muted-foreground leading-relaxed text-lg">
+            We are the premier German language training institute in the region, dedicated to equipping individuals with the linguistic skills and cultural knowledge necessary to thrive in German-speaking countries. Our rigorous curriculum, aligned with the Common European Framework of Reference (CEFR), is taught by highly qualified instructors utilizing modern pedagogies and immersive techniques.
+          </p>
+        </div>
+      </section>
+
       {/* CEFR Levels */}
-      <section id="levels" className="py-20 bg-muted/30">
+      <section id="levels" className="py-20">
         <div className="mx-auto max-w-7xl px-6">
           <div className="text-center mb-12">
-            <h2 className="font-display font-bold text-3xl">CEFR Language Levels</h2>
+            <h2 className="font-display font-bold text-3xl">German Language Levels</h2>
             <p className="mt-2 text-muted-foreground">Our structured progression from complete beginner to mastery</p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -127,58 +142,58 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Programmes */}
-      <section id="programs" className="py-20">
+      {/* Career Pathways */}
+      <section id="programs" className="py-20 bg-muted/30">
         <div className="mx-auto max-w-7xl px-6">
           <div className="text-center mb-12">
-            <h2 className="font-display font-bold text-3xl">Our Programmes</h2>
-            <p className="mt-2 text-muted-foreground">Flexible pathways for every learner's goal</p>
+            <h2 className="font-display font-bold text-3xl">Career Pathways in Germany</h2>
+            <p className="mt-2 text-muted-foreground">We offer end-to-end guidance for your professional journey</p>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {COURSES.map((c) => (
-              <Card key={c.code} className="shadow-card hover:shadow-elevated transition-shadow">
-                <CardContent className="p-6">
-                  <Badge variant="secondary" className="mb-3">{c.code}</Badge>
-                  <h3 className="font-semibold mb-2">{c.name}</h3>
-                  <p className="text-sm text-muted-foreground">{c.desc}</p>
-                  <div className="mt-4 text-xs text-muted-foreground font-medium">{c.level}</div>
-                </CardContent>
-              </Card>
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              { title: "Ausbildung (Vocational)", desc: "Dual vocational training programs in Germany. Earn while you learn with our dedicated placement support." },
+              { title: "Au Pair", desc: "Cultural exchange programs for young adults. We help you find a trusted host family in Germany." },
+              { title: "Study in Germany", desc: "University admission support, visa guidance, and academic pathway planning for Bachelors and Masters." },
+              { title: "Healthcare Pathway", desc: "Specialized language training and licensing support for Nurses and Medical Professionals." },
+              { title: "Hospitality Pathway", desc: "Direct placements into the German hospitality and tourism sector." },
+              { title: "Skilled Worker Visa", desc: "Fast-track language integration for experienced professionals seeking employment." },
+            ].map((p, i) => (
+               <Card key={i} className="shadow-card border-t-4 border-t-primary">
+                 <CardContent className="p-6">
+                   <h3 className="font-bold text-lg mb-2">{p.title}</h3>
+                   <p className="text-sm text-muted-foreground">{p.desc}</p>
+                 </CardContent>
+               </Card>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Announcements */}
-      <section id="announcements" className="py-20 bg-muted/30">
+      {/* Campuses & Facilities */}
+      <section id="campuses" className="py-20">
         <div className="mx-auto max-w-7xl px-6">
-          <h2 className="font-display font-bold text-3xl mb-8">Latest News</h2>
-          <div className="space-y-4">
-            {ANNOUNCEMENTS.map((a) => (
-              <Card key={a.id} className="shadow-card">
-                <CardContent className="p-5 flex items-start gap-4">
-                  <div className="size-10 rounded-md bg-primary/10 text-primary grid place-items-center flex-shrink-0">
-                    <Calendar className="size-5" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold">{a.title}</span>
-                      <Badge variant="secondary" className="text-[10px]">{a.tag}</Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-1">{a.body}</p>
-                  </div>
-                  <span className="text-xs text-muted-foreground flex-shrink-0">{a.date}</span>
-                </CardContent>
-              </Card>
-            ))}
+          <div className="flex flex-col md:flex-row items-center justify-between mb-12 gap-4">
+            <div>
+              <h2 className="font-display font-bold text-3xl">Our Campuses</h2>
+              <p className="mt-2 text-muted-foreground">State-of-the-art facilities across the country</p>
+            </div>
+            <Button variant="outline">Schedule a Tour</Button>
+          </div>
+          <div className="grid md:grid-cols-4 gap-4">
+             {["Ambwere Centre", "KNP Campus", "Bungoma Town Campus", "CTI Campus", "Virtual / Online"].map((camp, i) => (
+                <div key={i} className="p-6 rounded-xl border border-border bg-card flex flex-col items-center justify-center text-center hover:bg-muted/30 transition-colors">
+                  <MapPin className="size-6 text-primary mb-3" />
+                  <div className="font-semibold">{camp}</div>
+                </div>
+             ))}
           </div>
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section id="testimonials" className="py-20">
+      {/* Testimonials & Success Stories */}
+      <section id="testimonials" className="py-20 bg-muted/30">
         <div className="mx-auto max-w-7xl px-6">
-          <h2 className="font-display font-bold text-3xl mb-8 text-center">What our community says</h2>
+          <h2 className="font-display font-bold text-3xl mb-8 text-center">Student Success Stories</h2>
           <div className="grid md:grid-cols-3 gap-6">
             {TESTIMONIALS.map((t) => (
               <Card key={t.name} className="shadow-card">
@@ -186,7 +201,7 @@ export default function LandingPage() {
                   <p className="text-sm text-muted-foreground italic">"{t.quote}"</p>
                   <div className="mt-4">
                     <div className="font-semibold text-sm">{t.name}</div>
-                    <div className="text-xs text-muted-foreground">{t.role}</div>
+                    <div className="text-xs text-primary font-medium">{t.role}</div>
                   </div>
                 </CardContent>
               </Card>
@@ -195,26 +210,50 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Contact */}
-      <section id="contact" className="py-20 bg-muted/30">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="max-w-xl mx-auto text-center">
-            <h2 className="font-display font-bold text-3xl mb-4">Get in touch</h2>
-            <p className="text-muted-foreground mb-8">Enroll or enquire — our team responds within one business day.</p>
-            <div className="space-y-3 text-sm">
-              <div className="flex items-center justify-center gap-2 text-muted-foreground"><MapPin className="size-4" />{INSTITUTION.address}</div>
-              <div className="flex items-center justify-center gap-2 text-muted-foreground"><Phone className="size-4" />{INSTITUTION.phone}</div>
-              <div className="flex items-center justify-center gap-2 text-muted-foreground"><Mail className="size-4" />{INSTITUTION.email}</div>
-            </div>
-            <Button asChild size="lg" className="mt-8 gradient-primary text-primary-foreground">
-              <Link to="/login/student">Enroll now <ArrowRight className="size-4 ml-1" /></Link>
-            </Button>
+      {/* FAQ */}
+      <section id="faq" className="py-20">
+        <div className="mx-auto max-w-4xl px-6 text-center">
+          <h2 className="font-display font-bold text-3xl mb-8">Frequently Asked Questions</h2>
+          <div className="space-y-4 text-left">
+            {[
+              {q: "When is the next intake?", a: "We have multiple intakes throughout the year including January, March, June, and September. Please contact admissions for specific cohort start dates."},
+              {q: "Do you assist with visa applications?", a: "Yes! Our Academic Advisors provide comprehensive guidance on visa requirements for Ausbildung, Study, and Au Pair pathways."},
+              {q: "How long does it take to reach B2?", a: "Typically, an intensive progression from A1 to B2 takes approximately 8 to 10 months of dedicated study."},
+            ].map((f, i) => (
+              <div key={i} className="p-5 rounded-lg border border-border bg-card">
+                <div className="font-semibold flex items-center gap-2"><HelpCircle className="size-4 text-primary" /> {f.q}</div>
+                <div className="text-sm text-muted-foreground mt-2 pl-6">{f.a}</div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      <footer className="border-t border-border py-8 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} {INSTITUTION.name}. All rights reserved. · {INSTITUTION.motto}
+      {/* Contact & Admissions */}
+      <section id="contact" className="py-20 bg-primary text-primary-foreground">
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="max-w-xl mx-auto text-center">
+            <h2 className="font-display font-bold text-3xl mb-4">Start Your Journey Today</h2>
+            <p className="text-primary-foreground/80 mb-8">Enroll or enquire — our admissions team responds within one business day.</p>
+            <div className="space-y-3 text-sm mb-10">
+              <div className="flex items-center justify-center gap-2"><MapPin className="size-4" />{instAddress}</div>
+              <div className="flex items-center justify-center gap-2"><Phone className="size-4" />{instPhone}</div>
+              <div className="flex items-center justify-center gap-2"><Mail className="size-4" />{instEmail}</div>
+            </div>
+            <div className="flex flex-wrap gap-4 justify-center">
+              <Button asChild size="lg" variant="secondary" className="text-primary">
+                <Link to="/login/student">Admissions Portal</Link>
+              </Button>
+              <Button asChild size="lg" variant="outline" className="text-primary-foreground border-primary-foreground/20 hover:bg-primary-foreground/10">
+                <a href={`mailto:${instEmail}`}>Email Us</a>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer className="border-t border-border py-8 text-center text-xs text-muted-foreground bg-background">
+        © {new Date().getFullYear()} {instName}. All rights reserved. {profile?.tagline && `· ${profile.tagline}`}
       </footer>
     </div>
   );

@@ -128,6 +128,36 @@ class StudentViewSet(viewsets.ModelViewSet):
         
         return Response(timeline, status=status.HTTP_200_OK)
 
+    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAdminUser])
+    def analytics(self, request):
+        from django.db.models import Count
+        
+        # Academic Reports
+        by_level = Student.objects.filter(status=Student.Status.ACTIVE).values('current_level__code').annotate(count=Count('id'))
+        by_campus = Student.objects.filter(status=Student.Status.ACTIVE).values('campus__name').annotate(count=Count('id'))
+        
+        # Admissions & Marketing
+        applications_total = AdmissionApplication.objects.count()
+        applications_approved = AdmissionApplication.objects.filter(status='APPROVED').count()
+        conversion_rate = (applications_approved / applications_total * 100) if applications_total > 0 else 0
+        
+        referrals = Student.objects.values('referral_source').annotate(count=Count('id'))
+        pathways = Student.objects.values('career_pathway__name').annotate(count=Count('id'))
+
+        return Response({
+            "academic": {
+                "students_by_level": by_level,
+                "students_by_campus": by_campus
+            },
+            "admissions": {
+                "total_applications": applications_total,
+                "approved_applications": applications_approved,
+                "conversion_rate_percentage": round(conversion_rate, 2),
+                "referral_sources": referrals,
+                "career_pathways": pathways
+            }
+        }, status=status.HTTP_200_OK)
+
 class PlacementTestViewSet(viewsets.ModelViewSet):
     queryset = PlacementTest.objects.all().order_by('-date_taken')
     serializer_class = PlacementTestSerializer

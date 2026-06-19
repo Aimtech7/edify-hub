@@ -256,8 +256,31 @@ class FinanceReportsView(APIView):
             serializer = ReceiptSerializer(receipts, many=True)
             return Response(serializer.data)
             
+        elif report_type == 'weekly_collections':
+            today = datetime.date.today()
+            start_of_week = today - datetime.timedelta(days=today.weekday())
+            total = Payment.objects.filter(payment_date__gte=start_of_week, payment_date__lte=today, status=Payment.Status.ALLOCATED).aggregate(Sum('amount'))['amount__sum'] or 0.00
+            return Response({
+                "week_start": start_of_week.strftime('%Y-%m-%d'),
+                "total_collections": total
+            })
+
+        elif report_type == 'credit_balances':
+            students = Student.objects.filter(status=Student.Status.ACTIVE)
+            records = []
+            for s in students:
+                credit = s.credit_balance
+                if credit > 0:
+                    records.append({
+                        "student_id": s.id,
+                        "name": f"{s.first_name} {s.last_name}",
+                        "admission_no": s.admission_number,
+                        "credit_balance": credit
+                    })
+            return Response(records)
+            
         return Response(
-            {"detail": "Invalid report type. Supported: daily_collections, monthly_collections, outstanding_balances, fully_paid, unallocated_payments, payment_methods, recent_receipts"},
+            {"detail": "Invalid report type. Supported: daily_collections, weekly_collections, monthly_collections, outstanding_balances, credit_balances, fully_paid, unallocated_payments, payment_methods, recent_receipts"},
             status=status.HTTP_400_BAD_REQUEST
         )
 

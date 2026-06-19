@@ -1,40 +1,32 @@
-# Base image
-FROM python:3.10-slim as base
+# Use an official lightweight Python image.
+# https://hub.docker.com/_/python
+FROM python:3.11-slim
 
-# Set env vars
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PIP_NO_CACHE_DIR=off \
-    PIP_DISABLE_PIP_VERSION_CHECK=on \
-    PIP_DEFAULT_TIMEOUT=100
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
 
+# Set work directory
 WORKDIR /app
 
-# Builder stage
-FROM base as builder
-
-RUN apt-get update && apt-get install --no-install-recommends -y \
-    build-essential \
-    libpq-dev
-
-COPY requirements.txt .
-RUN pip install --user -r requirements.txt
-
-# Final runner stage
-FROM base as runner
-
-RUN apt-get update && apt-get install --no-install-recommends -y \
+# Install system dependencies needed for compiling and running Python packages
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
     libpq-dev \
-    curl \
-    && apt-get clean \
+    python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /root/.local /root/.local
-COPY . /app
+# Install python dependencies
+COPY requirements.txt /app/
+RUN pip install --upgrade pip
+RUN pip install --no-cache-dir -r requirements.txt
 
-ENV PATH=/root/.local/bin:$PATH
+# Copy project
+COPY . /app/
 
-EXPOSE 8000
+# Collect static files
+RUN python manage.py collectstatic --noinput
 
-# Runs Django production gunicorn server
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "config.wsgi:application"]
+# Run gunicorn
+# Bind to the port provided by the PORT environment variable or default to 8000
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-8000} config.wsgi:application"]

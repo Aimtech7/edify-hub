@@ -32,28 +32,26 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-40 backdrop-blur-md bg-background/80 border-b border-border">
+      <header className="sticky top-0 z-40 bg-secondary text-secondary-foreground border-b border-border shadow-md">
         <div className="mx-auto max-w-7xl px-6 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="size-9 rounded-lg gradient-primary grid place-items-center text-primary-foreground">
-              <GraduationCap className="size-5" />
-            </div>
+          <Link to="/" className="flex items-center gap-3">
+            <img src="/logo.png" alt="Horizon DTI Logo" className="h-10 w-auto object-contain bg-white rounded p-1" />
             <div className="leading-tight">
-              <div className="font-display font-bold text-base">{instName}</div>
-              <div className="text-[11px] text-muted-foreground">German Language Institute</div>
+              <div className="font-display font-bold text-base tracking-wide">HORIZON DTI</div>
+              <div className="text-[11px] text-muted-foreground uppercase tracking-wider">Deutsch Training Institute</div>
             </div>
           </Link>
-          <nav className="hidden md:flex items-center gap-7 text-sm text-muted-foreground">
-            <a href="#about"         className="hover:text-foreground">About Us</a>
-            <a href="#levels"        className="hover:text-foreground">Language Levels</a>
-            <a href="#programs"      className="hover:text-foreground">Career Pathways</a>
-            <a href="#campuses"      className="hover:text-foreground">Campuses</a>
-            <a href="#contact"       className="hover:text-foreground">Contact</a>
+          <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-secondary-foreground/80">
+            <a href="#about"         className="hover:text-accent transition-colors">About Us</a>
+            <a href="#levels"        className="hover:text-accent transition-colors">Language Levels</a>
+            <a href="#programs"      className="hover:text-accent transition-colors">Career Pathways</a>
+            <a href="#campuses"      className="hover:text-accent transition-colors">Campuses</a>
+            <a href="#contact"       className="hover:text-accent transition-colors">Contact</a>
           </nav>
           <div className="flex items-center gap-2">
-            <Button asChild variant="ghost" size="sm"><Link to="/login/student">Student</Link></Button>
-            <Button asChild variant="ghost" size="sm"><Link to="/login/staff">Staff</Link></Button>
-            <Button asChild size="sm" className="gradient-primary text-primary-foreground"><Link to="/login/admin">Admin</Link></Button>
+            <Button asChild variant="ghost" size="sm" className="hover:text-accent hover:bg-white/10"><Link to="/login/student">Student Portal</Link></Button>
+            <Button asChild variant="ghost" size="sm" className="hover:text-accent hover:bg-white/10"><Link to="/login/staff">Staff Portal</Link></Button>
+            <Button asChild size="sm" className="bg-primary hover:bg-primary-glow text-primary-foreground font-bold shadow-sm"><Link to="/login/admin">Admin</Link></Button>
           </div>
         </div>
       </header>
@@ -69,16 +67,16 @@ export default function LandingPage() {
             </Badge>
             <h1 className="font-display font-extrabold text-5xl md:text-6xl leading-[1.05] tracking-tight">
               Mastering German,{" "}
-              <span className="text-gradient">Opening Worlds</span>
+              <span className="text-primary">Opening Worlds</span>
             </h1>
             <p className="mt-5 text-lg text-muted-foreground max-w-xl">
-              {instName} offers structured German language training from A1 to C2. Prepare for your future in Germany with our expert instructors and comprehensive career pathways.
+              HORIZON DEUTSCH TRAINING INSTITUTE offers structured German language training from A1 to C2. Prepare for your future in Germany with our expert instructors and comprehensive career pathways.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Button asChild size="lg" className="gradient-primary text-primary-foreground shadow-elevated">
-                <Link to="/login/student">Admissions Portal <ArrowRight className="size-4 ml-1" /></Link>
+              <Button asChild size="lg" className="bg-primary hover:bg-primary-glow text-primary-foreground shadow-elevated font-bold">
+                <Link to="/admissions">Admissions Portal <ArrowRight className="size-4 ml-2" /></Link>
               </Button>
-              <Button asChild size="lg" variant="outline"><a href="#programs">Explore Pathways</a></Button>
+              <Button asChild size="lg" variant="outline" className="border-secondary text-secondary hover:bg-secondary hover:text-secondary-foreground"><a href="#programs">Explore Pathways</a></Button>
             </div>
           </div>
           <div className="lg:col-span-5 hidden lg:block">
@@ -107,7 +105,7 @@ export default function LandingPage() {
       {/* About Us */}
       <section id="about" className="py-20 bg-muted/30">
         <div className="mx-auto max-w-7xl px-6 text-center">
-          <h2 className="font-display font-bold text-3xl mb-4">About {instName}</h2>
+          <h2 className="font-display font-bold text-3xl mb-4">About HORIZON DTI</h2>
           <p className="max-w-3xl mx-auto text-muted-foreground leading-relaxed text-lg">
             We are the premier German language training institute in the region, dedicated to equipping individuals with the linguistic skills and cultural knowledge necessary to thrive in German-speaking countries. Our rigorous curriculum, aligned with the Common European Framework of Reference (CEFR), is taught by highly qualified instructors utilizing modern pedagogies and immersive techniques.
           </p>
@@ -230,21 +228,21 @@ export default function LandingPage() {
       </section>
 
       {/* Contact & Admissions */}
-      <section id="contact" className="py-20 bg-primary text-primary-foreground">
+      <section id="contact" className="py-20 bg-secondary text-secondary-foreground border-t-8 border-primary">
         <div className="mx-auto max-w-7xl px-6">
           <div className="max-w-xl mx-auto text-center">
-            <h2 className="font-display font-bold text-3xl mb-4">Start Your Journey Today</h2>
-            <p className="text-primary-foreground/80 mb-8">Enroll or enquire — our admissions team responds within one business day.</p>
+            <h2 className="font-display font-bold text-3xl mb-4 text-accent">Start Your Journey Today</h2>
+            <p className="text-secondary-foreground/80 mb-8">Enroll or enquire — our admissions team responds within one business day.</p>
             <div className="space-y-3 text-sm mb-10">
-              <div className="flex items-center justify-center gap-2"><MapPin className="size-4" />{instAddress}</div>
-              <div className="flex items-center justify-center gap-2"><Phone className="size-4" />{instPhone}</div>
-              <div className="flex items-center justify-center gap-2"><Mail className="size-4" />{instEmail}</div>
+              <div className="flex items-center justify-center gap-2"><MapPin className="size-4 text-accent" />{instAddress}</div>
+              <div className="flex items-center justify-center gap-2"><Phone className="size-4 text-accent" />{instPhone}</div>
+              <div className="flex items-center justify-center gap-2"><Mail className="size-4 text-accent" />{instEmail}</div>
             </div>
             <div className="flex flex-wrap gap-4 justify-center">
-              <Button asChild size="lg" variant="secondary" className="text-primary">
-                <Link to="/login/student">Admissions Portal</Link>
+              <Button asChild size="lg" className="bg-primary hover:bg-primary-glow text-primary-foreground font-bold">
+                <Link to="/admissions">Admissions Portal</Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="text-primary-foreground border-primary-foreground/20 hover:bg-primary-foreground/10">
+              <Button asChild size="lg" variant="outline" className="text-secondary hover:bg-secondary-foreground hover:text-secondary border-secondary-foreground/20">
                 <a href={`mailto:${instEmail}`}>Email Us</a>
               </Button>
             </div>

@@ -33,10 +33,18 @@ export const certificateService = {
       );
       return fixtureDelay(certs);
     }
-    const { data } = await apiClient.get<CertificateData[]>("/certificates/", { 
+    const { data } = await apiClient.get<any>("/certificates/", { 
       params: { student: studentId } 
     });
-    return data;
+    const results = Array.isArray(data) ? data : data.results || [];
+    return results.map((item: any) => ({
+      certificateNo: item.certificate_number,
+      studentName: item.student_name,
+      admissionNo: item.admission_no,
+      level: item.level_code,
+      completedDate: item.issue_date,
+      finalScore: item.final_score || 0,
+    }));
   },
 
   async verify(certNo: string): Promise<CertificateData | null> {
@@ -45,9 +53,20 @@ export const certificateService = {
       const found = all.find((c) => c.certificateNo === certNo);
       return fixtureDelay(found ?? null);
     }
-    const { data } = await apiClient.get<CertificateData>(`/certificates/verify/`, { 
-      params: { cert_no: certNo } 
-    });
-    return data;
+    try {
+      const { data } = await apiClient.get<any>(`/certificates/verify/`, { 
+        params: { cert_no: certNo } 
+      });
+      return {
+        certificateNo: data.certificate_number,
+        studentName: data.student_name,
+        admissionNo: data.admission_no,
+        level: data.level_code,
+        completedDate: data.issue_date,
+        finalScore: data.final_score || 0,
+      };
+    } catch {
+      return null;
+    }
   }
 };

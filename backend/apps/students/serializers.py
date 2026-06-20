@@ -92,10 +92,14 @@ class PlacementTestSerializer(serializers.ModelSerializer):
         return None
 
 class AdmissionApplicationSerializer(serializers.ModelSerializer):
-    campus_name = serializers.ReadOnlyField(source='campus.name')
     recommended_level_code = serializers.ReadOnlyField(source='recommended_level.code')
+    full_name = serializers.SerializerMethodField()
 
     class Meta:
         model = AdmissionApplication
         fields = '__all__'
-        read_only_fields = ('student_profile', 'status')
+        read_only_fields = ('student_profile', 'status', 'documents_verified', 'placement_test_score', 'recommended_level')
+
+    def get_full_name(self, obj):
+        parts = [obj.first_name, obj.middle_name, obj.last_name]
+        return ' '.join(p for p in parts if p)

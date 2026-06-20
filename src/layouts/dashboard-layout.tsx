@@ -65,12 +65,10 @@ export function DashboardLayout() {
           mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
-        <div className="h-16 px-5 flex items-center gap-2 border-b border-sidebar-border">
-          <div className="size-9 rounded-lg gradient-primary grid place-items-center text-primary-foreground">
-            <GraduationCap className="size-5" />
-          </div>
+        <div className="h-16 px-5 flex items-center gap-3 border-b border-sidebar-border">
+          <img src="/logo.png" alt="Horizon DTI Logo" className="h-8 w-auto object-contain bg-white rounded p-0.5" />
           <div className="leading-tight">
-            <div className="font-display font-bold text-sm">{INSTITUTION.name}</div>
+            <div className="font-display font-bold text-sm tracking-wide">HORIZON DTI</div>
             <div className="text-[10px] uppercase tracking-wider opacity-70">
               {roleLabel[user.role]} portal
             </div>

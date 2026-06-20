@@ -26,9 +26,14 @@ export default function LoginStaffPage() {
         onSubmit={async (e) => {
           e.preventDefault();
           if (!u || !pw) { toast.error("Enter your credentials"); return; }
-          await login(role, { username: u, password: pw });
-          toast.success(`Signed in as ${role}`);
-          navigate("/app/dashboard");
+          try {
+            await login(role, { username: u, password: pw });
+            toast.success(`Signed in as ${role}`);
+            navigate("/app/dashboard");
+          } catch (err: any) {
+            const errorMsg = err.response?.data?.detail || "Invalid username or password";
+            toast.error(errorMsg);
+          }
         }}
         className="space-y-5"
       >

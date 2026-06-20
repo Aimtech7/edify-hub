@@ -9,13 +9,11 @@ export function AuthShell({ title, subtitle, children, footer }: { title: string
       <div className="relative hidden lg:flex flex-col justify-between p-12 text-primary-foreground gradient-primary overflow-hidden">
         <div className="absolute inset-0 opacity-30"
              style={{ background: "radial-gradient(50% 50% at 20% 20%, white, transparent)" }} />
-        <Link to="/" className="relative flex items-center gap-2">
-          <div className="size-10 rounded-lg bg-white/15 border border-white/20 grid place-items-center backdrop-blur">
-            <GraduationCap className="size-5" />
-          </div>
-          <div className="leading-tight">
-            <div className="font-display font-bold">{INSTITUTION.name}</div>
-            <div className="text-[11px] opacity-80">LMS · Finance ERP</div>
+        <Link to="/" className="relative flex items-center gap-3 bg-white/10 p-3 rounded-xl w-fit backdrop-blur">
+          <img src="/logo.png" alt="Horizon DTI Logo" className="h-10 w-auto object-contain bg-white rounded p-1" />
+          <div className="leading-tight text-white">
+            <div className="font-display font-bold tracking-wide">HORIZON DTI</div>
+            <div className="text-[11px] opacity-80 uppercase tracking-wider">Deutsch Training Institute</div>
           </div>
         </Link>
         <div className="relative max-w-md">
@@ -27,11 +25,9 @@ export function AuthShell({ title, subtitle, children, footer }: { title: string
 
       <div className="flex items-center justify-center p-6 sm:p-10">
         <div className="w-full max-w-md">
-          <Link to="/" className="lg:hidden flex items-center gap-2 mb-8">
-            <div className="size-9 rounded-lg gradient-primary grid place-items-center text-primary-foreground">
-              <GraduationCap className="size-5" />
-            </div>
-            <span className="font-display font-bold">{INSTITUTION.name}</span>
+          <Link to="/" className="lg:hidden flex items-center gap-3 mb-8">
+            <img src="/logo.png" alt="Horizon DTI Logo" className="h-10 w-auto object-contain bg-white rounded p-1 shadow-sm border border-border" />
+            <span className="font-display font-bold text-lg tracking-wide">HORIZON DTI</span>
           </Link>
           <h1 className="text-2xl font-display font-bold">{title}</h1>
           {subtitle && <p className="text-sm text-muted-foreground mt-1.5">{subtitle}</p>}

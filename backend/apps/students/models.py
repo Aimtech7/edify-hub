@@ -172,33 +172,69 @@ class PlacementTest(models.Model):
 
 class AdmissionApplication(models.Model):
     class Status(models.TextChoices):
-        PENDING_DOCUMENTS = "Pending Documents", "Pending Documents"
-        PENDING_FEE = "Pending Fee", "Pending Fee"
+        ADMISSIONS_QUEUE = "Admissions Queue", "Admissions Queue"
+        DOCUMENT_VERIFICATION = "Document Verification", "Document Verification"
         PENDING_TEST = "Pending Test", "Pending Test"
         PENDING_APPROVAL = "Pending Approval", "Pending Approval"
         APPROVED = "Approved", "Approved"
         REJECTED = "Rejected", "Rejected"
 
-    applicant_name = models.CharField(max_length=100)
-    email = models.EmailField(blank=True, null=True)
+    # Step 1: Personal Info
+    first_name = models.CharField(max_length=50)
+    middle_name = models.CharField(max_length=50, blank=True)
+    last_name = models.CharField(max_length=50)
+    gender = models.CharField(max_length=10, blank=True)
+    date_of_birth = models.DateField(null=True, blank=True)
+    nationality = models.CharField(max_length=50, blank=True)
+    national_id = models.CharField(max_length=50, blank=True)
+
+    # Step 2: Contact Info
     phone = models.CharField(max_length=20)
-    campus = models.ForeignKey('academics.Campus', on_delete=models.SET_NULL, null=True, blank=True)
-    
+    alt_phone = models.CharField(max_length=20, blank=True)
+    email = models.EmailField()
+    county = models.CharField(max_length=50, blank=True)
+    town = models.CharField(max_length=50, blank=True)
+    postal_address = models.TextField(blank=True)
+
+    # Step 3: Education & Professional
+    highest_education = models.CharField(max_length=100, blank=True)
+    current_occupation = models.CharField(max_length=100, blank=True)
+    employer = models.CharField(max_length=100, blank=True)
+    professional_background = models.TextField(blank=True)
+
+    # Step 4: German Language Background
+    previous_experience = models.BooleanField(default=False)
+    current_german_level = models.CharField(max_length=50, blank=True)
+
+    # Step 5: Study Preferences
+    preferred_campus = models.CharField(max_length=100, blank=True)
+    study_mode = models.CharField(max_length=50, blank=True)
+    preferred_intake = models.CharField(max_length=50, blank=True)
+    preferred_schedule = models.CharField(max_length=50, blank=True)
+
+    # Step 6: Career Pathway & Referral
+    career_pathway = models.CharField(max_length=100, blank=True)
+    referral_source = models.CharField(max_length=50, blank=True)
+
+    # Step 7: Document Uploads
+    id_passport_document = models.FileField(upload_to='admissions/ids/', blank=True, null=True)
+    passport_photo = models.FileField(upload_to='admissions/photos/', blank=True, null=True)
+    academic_certificates = models.FileField(upload_to='admissions/certificates/', blank=True, null=True)
+    additional_documents = models.FileField(upload_to='admissions/misc/', blank=True, null=True)
+
     # Workflow tracking
-    documents_uploaded = models.BooleanField(default=False)
-    registration_fee_paid = models.BooleanField(default=False)
+    documents_verified = models.BooleanField(default=False)
     placement_test_score = models.IntegerField(null=True, blank=True)
     recommended_level = models.ForeignKey('academics.Level', on_delete=models.SET_NULL, null=True, blank=True)
     
-    status = models.CharField(max_length=50, choices=Status.choices, default=Status.PENDING_DOCUMENTS)
-    
-    student_profile = models.OneToOneField(Student, on_delete=models.SET_NULL, null=True, blank=True, related_name='application')
+    status = models.CharField(max_length=50, choices=Status.choices, default=Status.ADMISSIONS_QUEUE)
+    student_profile = models.OneToOneField('Student', on_delete=models.SET_NULL, null=True, blank=True, related_name='application')
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.applicant_name} - {self.status}"
+        return f"{self.first_name} {self.last_name} - {self.status}"
 
 from django.db.models.signals import post_save
 from django.dispatch import receiver

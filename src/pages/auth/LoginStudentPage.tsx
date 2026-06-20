@@ -23,9 +23,14 @@ export default function LoginStudentPage() {
         onSubmit={async (e) => {
           e.preventDefault();
           if (!adm || !pw) { toast.error("Enter your credentials"); return; }
-          await login("student", { username: adm, password: pw });
-          toast.success("Welcome back!");
-          navigate("/app/dashboard");
+          try {
+            await login("student", { username: adm, password: pw });
+            toast.success("Welcome back!");
+            navigate("/app/dashboard");
+          } catch (err: any) {
+            const errorMsg = err.response?.data?.detail || "Invalid username or password";
+            toast.error(errorMsg);
+          }
         }}
         className="space-y-4"
       >

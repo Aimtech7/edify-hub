@@ -190,7 +190,7 @@ class AdmissionApplicationViewSet(viewsets.ModelViewSet):
         if self.request.user.is_authenticated:
             log_action(
                 self.request.user,
-                f"Created admission application for {app.applicant_name}",
+                f"Created admission application for {app.first_name} {app.last_name}",
                 self.request
             )
 
@@ -201,23 +201,22 @@ class AdmissionApplicationViewSet(viewsets.ModelViewSet):
         if app.status == AdmissionApplication.Status.APPROVED:
             return Response({"detail": "Already approved."}, status=status.HTTP_400_BAD_REQUEST)
             
-        if not app.documents_uploaded or not app.registration_fee_paid:
-            return Response({"detail": "Documents and fee must be verified before approval."}, status=status.HTTP_400_BAD_REQUEST)
+        if not app.documents_verified:
+            return Response({"detail": "Documents must be verified before approval."}, status=status.HTTP_400_BAD_REQUEST)
             
         # Approval converts application to student
         serializer = StudentSerializer(data={
-            'first_name': app.applicant_name.split()[0],
-            'last_name': ' '.join(app.applicant_name.split()[1:]) if len(app.applicant_name.split()) > 1 else '',
+            'first_name': app.first_name,
+            'last_name': app.last_name,
             'email': app.email,
             'phone': app.phone,
-            'campus': app.campus.id if app.campus else None,
             'current_level': app.recommended_level.id if app.recommended_level else None
         }, context={'application': app})
         
         if serializer.is_valid():
             serializer.save()
             from audits.models import log_action
-            log_action(self.request.user, f"Approved admission for {app.applicant_name}", request)
+            log_action(self.request.user, f"Approved admission for {app.first_name} {app.last_name}", request)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
             
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

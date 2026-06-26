@@ -12,11 +12,67 @@ class Campus(models.Model):
     def __str__(self):
         return self.name
 
+class AcademicYear(models.Model):
+    year = models.CharField(max_length=20, unique=True) # e.g. "2025/2026"
+    start_date = models.DateField()
+    end_date = models.DateField()
+    is_current = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.year
+
+class Semester(models.Model):
+    academic_year = models.ForeignKey(AcademicYear, on_delete=models.CASCADE, related_name='semesters')
+    name = models.CharField(max_length=50) # e.g. "Semester 1"
+    start_date = models.DateField()
+    end_date = models.DateField()
+    is_current = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.academic_year.year} - {self.name}"
+
+class Term(models.Model):
+    semester = models.ForeignKey(Semester, on_delete=models.CASCADE, related_name='terms')
+    name = models.CharField(max_length=50) # e.g. "Term 1"
+    start_date = models.DateField()
+    end_date = models.DateField()
+    is_current = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.semester.name} - {self.name}"
+
+class Department(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    code = models.CharField(max_length=20, unique=True)
+    head = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='headed_departments'
+    )
+    description = models.TextField(blank=True)
+
+    def __str__(self):
+        return self.name
+
+class Program(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    code = models.CharField(max_length=20, unique=True)
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='programs')
+    duration_months = models.IntegerField(default=6)
+    description = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"{self.code}: {self.name}"
+
 class Level(models.Model):
-    code = models.CharField(max_length=10, unique=True) # A1, A2, B1, B2, C1, C2
-    name = models.CharField(max_length=50) # e.g. "Grundstufe A1"
+    code = models.CharField(max_length=10, unique=True) # A1.1, A1.2, A2.1, etc.
+    name = models.CharField(max_length=50) # e.g. "Grundstufe A1.1"
     description = models.TextField(blank=True)
     duration_weeks = models.IntegerField(default=8)
+    parent_level = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL, related_name='sub_levels')
+    cefr_category = models.CharField(max_length=10, blank=True) # A1, A2, B1, B2, C1, C2
 
     def __str__(self):
         return self.code
@@ -151,3 +207,57 @@ class LearningResource(models.Model):
 
     def __str__(self):
         return f"{self.title} ({self.level.code})"
+
+class ProgressionRule(models.Model):
+    level = models.OneToOneField(Level, on_delete=models.CASCADE, related_name='progression_rule')
+    min_attendance_percentage = models.FloatField(default=80.0)
+    min_exam_score_percentage = models.FloatField(default=60.0)
+    min_assignments_completed = models.IntegerField(default=5)
+    allow_repeat_on_failure = models.BooleanField(default=True)
+    max_repeat_attempts = models.IntegerField(default=2)
+
+    def __str__(self):
+        return f"Rule for {self.level.code}"
+
+class GraduationRule(models.Model):
+    program = models.OneToOneField(Program, on_delete=models.CASCADE, related_name='graduation_rule')
+    required_level = models.ForeignKey(Level, on_delete=models.PROTECT) # e.g. B2.2 or C1.2
+    min_total_credits = models.IntegerField(default=120)
+    require_fee_clearance = models.BooleanField(default=True)
+    require_library_clearance = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"Graduation Rule: {self.program.code}"
+
+class StudentTimelineEvent(models.Model):
+    class EventType(models.TextChoices):
+        ENROLLMENT = "ENROLLMENT", "Enrollment"
+        PROMOTION = "PROMOTION", "Promotion"
+        REPEAT = "REPEAT", "Repeat"
+        EXAM_PASSED = "EXAM_PASSED", "Exam Passed"
+        EXAM_FAILED = "EXAM_FAILED", "Exam Failed"
+        DISCIPLINARY = "DISCIPLINARY", "Disciplinary"
+        ADVISING = "ADVISING", "Advising Session"
+        FINANCIAL = "FINANCIAL", "Financial Event"
+        GRADUATION = "GRADUATION", "Graduation"
+
+    student = models.ForeignKey('students.Student', on_delete=models.CASCADE, related_name='timeline_events')
+    event_type = models.CharField(max_length=30, choices=EventType.choices)
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.student.admission_number} - {self.title}"
+
+class AdvisingSession(models.Model):
+    student = models.ForeignKey('students.Student', on_delete=models.CASCADE, related_name='advising_sessions')
+    advisor = models.ForeignKey(Advisor, on_delete=models.CASCADE, related_name='sessions')
+    date = models.DateTimeField(auto_now_add=True)
+    notes = models.TextField()
+    action_items = models.TextField(blank=True)
+    next_followup_date = models.DateField(null=True, blank=True)
+
+    def __str__(self):
+        return f"Advising: {self.student.admission_number} by {self.advisor}"

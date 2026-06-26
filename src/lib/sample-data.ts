@@ -12,7 +12,9 @@ export const INSTITUTION = {
 
 // CEFR Levels
 export const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"] as const;
+export const GRANULAR_CEFR_LEVELS = ["A1.1", "A1.2", "A2.1", "A2.2", "B1.1", "B1.2", "B2.1", "B2.2", "C1.1", "C1.2", "C2"] as const;
 export type CefrLevel = typeof CEFR_LEVELS[number];
+export type GranularCefrLevel = typeof GRANULAR_CEFR_LEVELS[number];
 
 export const CEFR_LEVEL_INFO: Record<CefrLevel, { label: string; band: "Beginner" | "Intermediate" | "Advanced"; description: string; durationWeeks: number }> = {
   A1: { label: "A1 – Breakthrough",  band: "Beginner",      description: "Introduce yourself, ask and answer simple questions about personal details.",  durationWeeks: 10 },

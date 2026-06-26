@@ -37,6 +37,7 @@ export const NAV: Record<Role, NavGroup[]> = {
       label: "Mein Kurs",
       items: [
         { to: "/app/dashboard", label: "Dashboard",      icon: LayoutDashboard },
+        { to: "/app/player",    label: "E-Learning LMS", icon: BookCopy },
         { to: "/app/levels",    label: "My Progress",    icon: TrendingUp },
         { to: "/app/attendance", label: "My Attendance",  icon: CalendarCheck2 },
         { to: "/app/results",   label: "Results",        icon: FileBarChart2 },
@@ -60,6 +61,7 @@ export const NAV: Record<Role, NavGroup[]> = {
       label: "Teaching",
       items: [
         { to: "/app/dashboard",  label: "Dashboard",        icon: LayoutDashboard },
+        { to: "/app/odel-courses", label: "ODEL Courses",    icon: BookCopy },
         { to: "/app/students",   label: "Students",          icon: Users },
         { to: "/app/levels",     label: "Language Levels",   icon: TrendingUp },
         { to: "/app/marks",      label: "Marks Entry",       icon: ClipboardEdit },
@@ -107,6 +109,7 @@ export const NAV: Record<Role, NavGroup[]> = {
     {
       label: "Academic",
       items: [
+        { to: "/app/odel-courses",  label: "ODEL Courses",     icon: BookCopy },
         { to: "/app/levels",        label: "Language Levels",  icon: TrendingUp },
         { to: "/app/academic",      label: "Academic Setup",   icon: BookCopy },
         { to: "/app/fee-structure", label: "Fee Structure",    icon: Wallet },

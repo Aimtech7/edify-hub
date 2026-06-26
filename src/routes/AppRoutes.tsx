@@ -33,6 +33,8 @@ import MarksPage from "@/pages/app/MarksPage";
 import ReportsPage from "@/pages/app/ReportsPage";
 import ProfilePage from "@/pages/app/ProfilePage";
 import CertificatesPage from "@/pages/app/CertificatesPage";
+import OdelCoursesPage from "@/pages/app/OdelCoursesPage";
+import LearningPlayerPage from "@/pages/app/LearningPlayerPage";
 
 import PublicVerifyPage from "@/pages/PublicVerifyPage";
 import AdmissionsPortalPage from "@/pages/AdmissionsPortalPage";
@@ -87,6 +89,24 @@ export default function AppRoutes() {
           element={
             <RoleProtectedRoute allowed={["student", "teacher", "admin"]}>
               <LevelsPage />
+            </RoleProtectedRoute>
+          }
+        />
+
+        <Route
+          path="odel-courses"
+          element={
+            <RoleProtectedRoute allowed={["teacher", "admin"]}>
+              <OdelCoursesPage />
+            </RoleProtectedRoute>
+          }
+        />
+
+        <Route
+          path="player"
+          element={
+            <RoleProtectedRoute allowed={["student", "teacher", "admin"]}>
+              <LearningPlayerPage />
             </RoleProtectedRoute>
           }
         />

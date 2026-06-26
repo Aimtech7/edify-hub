@@ -38,6 +38,7 @@ urlpatterns = [
     path("api/", include("audits.urls")),
     path("api/", include("notifications.urls")),
     path("api/core/", include("core.urls")),
+    path("api/odel/", include("odel.urls")),
 ]
 
 if settings.DEBUG:

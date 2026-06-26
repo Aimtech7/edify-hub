@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "audits",
     "notifications",
     "core",
+    "odel",
 ]
 
 MIDDLEWARE = [

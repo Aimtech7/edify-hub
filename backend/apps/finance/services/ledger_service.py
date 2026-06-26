@@ -92,8 +92,5 @@ class LedgerService:
         # outstanding_balance = max(0, charges - total_paid)
         # credit_balance = max(0, total_paid - charges)
         
-        student.total_fees = charges
-        student.total_paid = total_paid
-        student.outstanding_balance = max(0, charges - total_paid)
-        student.credit_balance = max(0, total_paid - charges)
-        student.save(update_fields=['total_fees', 'total_paid', 'outstanding_balance', 'credit_balance'])
+        # Properties on Student model dynamically query StudentLedger, so no model fields need updating.
+        pass

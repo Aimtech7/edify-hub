@@ -133,6 +133,16 @@ export const NAV: Record<Role, NavGroup[]> = {
       ],
     },
   ],
+  parent: [
+    {
+      label: "Parent Portal",
+      items: [
+        { to: "/app/dashboard", label: "Portal Overview", icon: LayoutDashboard },
+        { to: "/app/receipts", label: "Fee Receipts", icon: ReceiptText },
+        { to: "/app/communication", label: "Communication", icon: MessageSquare },
+      ],
+    },
+  ],
 };
 
 export { GraduationCap };

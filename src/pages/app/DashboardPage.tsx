@@ -17,6 +17,7 @@ import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { paymentService } from "@/services/payment-service";
 import type { Payment } from "@/types";
+import ParentPortal from "@/components/students/ParentPortal";
 
 export default function DashboardPage() {
   const user = useCurrentUser();
@@ -24,6 +25,7 @@ export default function DashboardPage() {
   if (user.role === "student") return <StudentDash />;
   if (user.role === "teacher") return <TeacherDash />;
   if (user.role === "accountant") return <AccountantDash />;
+  if (user.role === "parent") return <ParentPortal />;
   return <AdminDash />;
 }
 

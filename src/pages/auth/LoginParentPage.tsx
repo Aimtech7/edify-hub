@@ -7,25 +7,25 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/auth-context";
 import { toast } from "sonner";
 
-export default function LoginStudentPage() {
+export default function LoginParentPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [adm, setAdm] = useState("DA-2024-1042");
-  const [pw, setPw] = useState("student");
+  const [u, setU] = useState("dwanjiru");
+  const [pw, setPw] = useState("parent");
 
   return (
     <AuthShell
-      title="Student sign in"
-      subtitle="Use your student number and password to access your results, fees and CEFR progress."
-      footer={<>Parent? <Link to="/login/parent" className="text-primary font-medium">Parent login</Link> · Staff? <Link to="/login/staff" className="text-primary font-medium">Staff login</Link> · <Link to="/login/admin" className="text-primary font-medium">Admin</Link></>}
+      title="Parent / Guardian sign in"
+      subtitle="Access real-time CEFR language progress, attendance records, and fee balances for your enrolled children."
+      footer={<>Student? <Link to="/login/student" className="text-primary font-medium">Student login</Link> · <Link to="/login/staff" className="text-primary font-medium">Staff</Link></>}
     >
       <form
         onSubmit={async (e) => {
           e.preventDefault();
-          if (!adm || !pw) { toast.error("Enter your credentials"); return; }
+          if (!u || !pw) { toast.error("Enter your credentials"); return; }
           try {
-            await login("student", { username: adm, password: pw });
-            toast.success("Welcome back!");
+            await login("parent", { username: u, password: pw });
+            toast.success("Welcome to Parent Portal!");
             navigate("/app/dashboard");
           } catch (err: any) {
             const errorMsg = err.response?.data?.detail || "Invalid username or password";
@@ -35,8 +35,8 @@ export default function LoginStudentPage() {
         className="space-y-4"
       >
         <div className="space-y-1.5">
-          <Label htmlFor="adm">Student Number</Label>
-          <Input id="adm" value={adm} onChange={(e) => setAdm(e.target.value)} placeholder="DA-2024-1042" />
+          <Label htmlFor="u">Email or Phone or Username</Label>
+          <Input id="u" value={u} onChange={(e) => setU(e.target.value)} placeholder="e.g. david.wanjiru@gmail.com or dwanjiru" />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="pw">Password</Label>
@@ -45,7 +45,7 @@ export default function LoginStudentPage() {
         <div className="flex items-center justify-between text-sm">
           <Link to="/forgot-password" className="text-primary hover:underline">Forgot password?</Link>
         </div>
-        <Button type="submit" className="w-full gradient-primary text-primary-foreground">Sign in</Button>
+        <Button type="submit" className="w-full gradient-primary text-primary-foreground">Sign in to Portal</Button>
       </form>
     </AuthShell>
   );

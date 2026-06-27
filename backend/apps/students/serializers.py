@@ -103,3 +103,32 @@ class AdmissionApplicationSerializer(serializers.ModelSerializer):
     def get_full_name(self, obj):
         parts = [obj.first_name, obj.middle_name, obj.last_name]
         return ' '.join(p for p in parts if p)
+
+from students.models import ParentGuardian
+
+class ParentChildSummarySerializer(serializers.ModelSerializer):
+    total_paid = serializers.FloatField(read_only=True)
+    total_fees = serializers.FloatField(read_only=True)
+    current_level_name = serializers.CharField(source='current_level.name', read_only=True)
+    attendance_rate = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Student
+        fields = ['id', 'admission_number', 'first_name', 'last_name', 'status', 'current_level_name', 'total_paid', 'total_fees', 'attendance_rate']
+
+    def get_attendance_rate(self, obj):
+        from attendance.models import Attendance
+        total = Attendance.objects.filter(student=obj).count()
+        if total == 0:
+            return 100.0
+        present = Attendance.objects.filter(student=obj, status=Attendance.Status.PRESENT).count()
+        return round((present / total) * 100, 1)
+
+class ParentGuardianSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username', read_only=True)
+    email = serializers.EmailField(source='user.email', read_only=True)
+    children = ParentChildSummarySerializer(source='students', many=True, read_only=True)
+
+    class Meta:
+        model = ParentGuardian
+        fields = ['id', 'username', 'email', 'phone_number', 'relationship', 'children']

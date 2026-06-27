@@ -57,6 +57,8 @@ class ResultViewSet(viewsets.ModelViewSet):
         if user.role == 'STUDENT':
             # Students can only view their own PUBLISHED results
             return Result.objects.filter(student__user=user, is_published=True).order_by('-created_at')
+        if user.role == 'PARENT':
+            return Result.objects.filter(student__guardians__user=user, is_published=True).order_by('-created_at')
             
         # Teachers and Admins can view all and apply filters
         queryset = Result.objects.all().order_by('-created_at')
@@ -102,8 +104,10 @@ class ResultViewSet(viewsets.ModelViewSet):
         """
         result = self.get_object()
         
-        # Check permissions for students
+        # Check permissions for students and parents
         if request.user.role == 'STUDENT' and result.student.user != request.user:
+            return Response({"detail": "You do not have permission to access this report."}, status=status.HTTP_403_FORBIDDEN)
+        if request.user.role == 'PARENT' and not result.student.guardians.filter(user=request.user).exists():
             return Response({"detail": "You do not have permission to access this report."}, status=status.HTTP_403_FORBIDDEN)
 
         from audits.models import log_action

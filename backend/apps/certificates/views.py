@@ -48,6 +48,8 @@ class CertificateViewSet(viewsets.ModelViewSet):
         if user.role == 'STUDENT':
             # Students can only see their own certificates
             return Certificate.objects.filter(student__user=user).order_by('-issue_date')
+        if user.role == 'PARENT':
+            return Certificate.objects.filter(student__guardians__user=user).order_by('-issue_date')
         return super().get_queryset()
 
     @action(detail=True, methods=['get'])
@@ -57,8 +59,10 @@ class CertificateViewSet(viewsets.ModelViewSet):
         """
         certificate = self.get_object()
         
-        # Check permissions for students
+        # Check permissions for students and parents
         if request.user.role == 'STUDENT' and certificate.student.user != request.user:
+            return Response({"detail": "You do not have permission to access this certificate."}, status=status.HTTP_403_FORBIDDEN)
+        if request.user.role == 'PARENT' and not certificate.student.guardians.filter(user=request.user).exists():
             return Response({"detail": "You do not have permission to access this certificate."}, status=status.HTTP_403_FORBIDDEN)
 
         response = HttpResponse(content_type='application/pdf')

@@ -1,15 +1,5 @@
-export type Role = "student" | "teacher" | "accountant" | "admin";
-
-export interface AuthUser {
-  id: string;
-  name: string;
-  username: string;
-  role: Role;
-  email?: string;
-  admissionNo?: string;
-  classroom?: string;
-  level?: string;
-}
+import type { Role, AuthUser } from "@/types";
+export type { Role, AuthUser };
 
 const KEY = "horizon_auth_user";
 
@@ -64,6 +54,13 @@ export function loginAs(role: Role, username: string): AuthUser {
       role: "admin",
       email: "admin@deutschakademie.co.ke",
     },
+    parent: {
+      id: "par-501",
+      name: "David Wanjiru (Guardian)",
+      username: username || "dwanjiru",
+      role: "parent",
+      email: "david.wanjiru@gmail.com",
+    },
   };
   const u = presets[role];
   setUser(u);
@@ -75,4 +72,5 @@ export const roleHome: Record<Role, string> = {
   teacher: "/app/dashboard",
   accountant: "/app/dashboard",
   admin: "/app/dashboard",
+  parent: "/app/dashboard",
 };

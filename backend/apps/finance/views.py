@@ -42,6 +42,8 @@ class PaymentViewSet(viewsets.ModelViewSet):
         if user.role == 'STUDENT':
             # Students see their own payments only
             return Payment.objects.filter(student__user=user).order_by('-payment_date')
+        if user.role == 'PARENT':
+            return Payment.objects.filter(student__guardians__user=user).order_by('-payment_date')
             
         queryset = Payment.objects.all().order_by('-payment_date')
         
@@ -150,6 +152,8 @@ class ReceiptViewSet(viewsets.ReadOnlyModelViewSet):
         if user.role == 'STUDENT':
             # Students only see receipts for their own payments
             return Receipt.objects.filter(payment__student__user=user)
+        if user.role == 'PARENT':
+            return Receipt.objects.filter(payment__student__guardians__user=user)
         return Receipt.objects.all().order_by('-issue_date')
 
     def retrieve(self, request, *args, **kwargs):

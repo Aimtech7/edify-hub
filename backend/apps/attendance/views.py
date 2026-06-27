@@ -24,6 +24,8 @@ class AttendanceViewSet(viewsets.ModelViewSet):
         if user.role == 'STUDENT':
             # Students can only view their own attendance history
             return Attendance.objects.filter(student__user=user).order_by('-date')
+        if user.role == 'PARENT':
+            return Attendance.objects.filter(student__guardians__user=user).order_by('-date')
             
         # Teachers and Admins can see all records and apply filters
         queryset = Attendance.objects.all().order_by('-date')
@@ -107,6 +109,8 @@ class AttendanceViewSet(viewsets.ModelViewSet):
             # If student is a student, report for themselves
             if request.user.role == 'STUDENT':
                 query &= Q(student__user=request.user)
+            elif request.user.role == 'PARENT':
+                query &= Q(student__guardians__user=request.user)
             else:
                 return Response(
                     {"detail": "Please specify a student or cohort query parameter."},

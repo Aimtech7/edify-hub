@@ -50,6 +50,7 @@ export default function LandingPage() {
           </nav>
           <div className="flex items-center gap-2">
             <Button asChild variant="ghost" size="sm" className="hover:text-accent hover:bg-white/10"><Link to="/login/student">Student Portal</Link></Button>
+            <Button asChild variant="ghost" size="sm" className="hover:text-accent hover:bg-white/10"><Link to="/login/parent">Parent Portal</Link></Button>
             <Button asChild variant="ghost" size="sm" className="hover:text-accent hover:bg-white/10"><Link to="/login/staff">Staff Portal</Link></Button>
             <Button asChild size="sm" className="bg-primary hover:bg-primary-glow text-primary-foreground font-bold shadow-sm"><Link to="/login/admin">Admin</Link></Button>
           </div>

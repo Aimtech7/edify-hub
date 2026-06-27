@@ -1,4 +1,4 @@
-export type Role = "student" | "teacher" | "accountant" | "admin";
+export type Role = "student" | "teacher" | "accountant" | "admin" | "parent";
 
 export type CefrLevel = "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
 
@@ -112,4 +112,24 @@ export interface FeeStructure {
   boarding: number;
   materials?: number;
   certificate?: number;
+}
+
+export interface ParentChildSummary {
+  id: string;
+  admissionNo: string;
+  name: string;
+  level: CefrLevel;
+  status: string;
+  totalFees: number;
+  paid: number;
+  attendanceRate: number;
+}
+
+export interface ParentGuardian {
+  id: string;
+  username: string;
+  email: string;
+  phone: string;
+  relationship: string;
+  children: ParentChildSummary[];
 }

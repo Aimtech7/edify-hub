@@ -50,7 +50,9 @@ class StudentViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if user.role == 'STUDENT':
             # Students can only retrieve/view their own student profile
-            return Student.objects.filter(user=user)
+            return Student.objects.filter(user=user).order_by('admission_number')
+        if user.role == 'PARENT':
+            return Student.objects.filter(guardians__user=user).order_by('admission_number')
             
         # Admin, Accountant, Teacher can see list & apply filters
         queryset = Student.objects.all().order_by('admission_number')
@@ -84,6 +86,20 @@ class StudentViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Student.DoesNotExist:
             return Response({"detail": "Student profile not found for this user."}, status=status.HTTP_404_NOT_FOUND)
+
+    @action(detail=False, methods=['get'], url_path='my-children', permission_classes=[permissions.IsAuthenticated])
+    def my_children(self, request):
+        """
+        Helper endpoint returning summary details of children linked to the parent user.
+        """
+        from students.serializers import ParentChildSummarySerializer
+        user = request.user
+        if user.role == 'PARENT':
+            children = Student.objects.filter(guardians__user=user).order_by('first_name')
+        else:
+            children = Student.objects.none()
+        serializer = ParentChildSummarySerializer(children, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['get'])
     def timeline(self, request, pk=None):

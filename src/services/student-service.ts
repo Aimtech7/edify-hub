@@ -58,4 +58,24 @@ export const studentService = {
     });
     return data;
   },
+
+  async getMyChildren(): Promise<any[]> {
+    if (USE_FIXTURES) {
+      return fixtureDelay(
+        STUDENTS.slice(0, 2).map((s) => ({
+          id: s.id,
+          admission_number: s.admissionNo,
+          first_name: s.name.split(" ")[0],
+          last_name: s.name.split(" ").slice(1).join(" "),
+          status: "Active",
+          current_level_name: s.level,
+          total_paid: s.paid,
+          total_fees: s.totalFees,
+          attendance_rate: 94.5,
+        }))
+      );
+    }
+    const { data } = await apiClient.get<any[]>("/students/my-children/");
+    return data;
+  },
 };

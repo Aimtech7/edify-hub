@@ -80,10 +80,19 @@ const NAV: Record<Role, NavGroup[]> = {
       { to: "/app/audit-logs", label: "Audit Logs", icon: ScrollText },
     ]},
   ],
+  parent: [
+    { label: "Parent Portal", items: [
+      { to: "/app/dashboard", label: "Overview", icon: LayoutDashboard },
+      { to: "/app/receipts", label: "Receipts", icon: ReceiptText },
+    ]},
+    { label: "Account", items: [
+      { to: "/app/profile", label: "Profile", icon: User },
+    ]},
+  ],
 };
 
 const roleLabel: Record<Role, string> = {
-  student: "Student", teacher: "Teacher", accountant: "Accountant", admin: "Administrator",
+  student: "Student", teacher: "Teacher", accountant: "Accountant", admin: "Administrator", parent: "Parent / Guardian",
 };
 
 export function AppShell({ children }: { children: ReactNode }) {

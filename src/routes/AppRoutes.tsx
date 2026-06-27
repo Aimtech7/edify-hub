@@ -8,6 +8,7 @@ import UnauthorizedPage from "@/pages/UnauthorizedPage";
 import SessionTimeoutPage from "@/pages/SessionTimeoutPage";
 
 import LoginStudentPage from "@/pages/auth/LoginStudentPage";
+import LoginParentPage from "@/pages/auth/LoginParentPage";
 import LoginStaffPage from "@/pages/auth/LoginStaffPage";
 import LoginAdminPage from "@/pages/auth/LoginAdminPage";
 import ForgotPasswordPage from "@/pages/auth/ForgotPasswordPage";
@@ -49,6 +50,7 @@ export default function AppRoutes() {
       <Route path="/admissions" element={<AdmissionsPortalPage />} />
 
       <Route path="/login/student" element={<LoginStudentPage />} />
+      <Route path="/login/parent" element={<LoginParentPage />} />
       <Route path="/login/staff" element={<LoginStaffPage />} />
       <Route path="/login/admin" element={<LoginAdminPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />

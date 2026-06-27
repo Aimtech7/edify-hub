@@ -200,10 +200,11 @@ SIMPLE_JWT = {
 }
 
 # CORS Configuration
+CORS_ALLOW_ALL_ORIGINS = os.getenv("CORS_ALLOW_ALL_ORIGINS", "False").lower() in ("true", "1", "yes")
 CORS_ALLOWED_ORIGINS = [
     origin.strip() for origin in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if origin.strip()
 ]
-if not CORS_ALLOWED_ORIGINS:
+if not CORS_ALLOWED_ORIGINS and not CORS_ALLOW_ALL_ORIGINS:
     CORS_ALLOWED_ORIGINS = [
         "http://localhost:5000",
         "http://localhost:3000",

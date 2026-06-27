@@ -24,6 +24,11 @@ def run_uat_verification():
     print("[START] STARTING AUTOMATED UAT LIFECYCLE VERIFICATION (PHASE 9)")
     print("=" * 60)
 
+    # Clean up previous UAT test artifacts for idempotent verification
+    Student.objects.filter(admission_number='UAT-2026-001').delete()
+    User.objects.filter(username='UAT-2026-001').delete()
+    AdmissionApplication.objects.filter(email='hans@zimmer.de').delete()
+
     # Clean previous test logs for clean assertion
     initial_log_count = AuditLog.objects.count()
 
@@ -54,7 +59,11 @@ def run_uat_verification():
     app.status = AdmissionApplication.Status.APPROVED
     app.save()
 
-    student_user, _ = User.objects.get_or_create(username='UAT-2026-001', defaults={'role': 'STUDENT'})
+    student_user, _ = User.objects.get_or_create(username='UAT-2026-001', defaults={'role': 'STUDENT', 'email': app.email})
+    if not student_user.email:
+        student_user.email = app.email
+        student_user.save()
+
     student, _ = Student.objects.get_or_create(
         admission_number='UAT-2026-001',
         defaults={
@@ -78,7 +87,7 @@ def run_uat_verification():
         phone_number='+254700112233',
         amount=40000.00,
         payment_method=Payment.Methods.MPESA,
-        mpesa_reference='QWE123RTY'
+        mpesa_reference=f'QWE{uuid.uuid4().hex[:6].upper()}'
     )
     # Allocate to tuition and exam
     Allocation.objects.create(payment=payment, category=Allocation.Categories.TUITION, amount=35000.00)

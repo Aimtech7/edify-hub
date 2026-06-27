@@ -68,6 +68,34 @@ export function loginAs(role: Role, username: string): AuthUser {
       role: "hr",
       email: "hr@deutschakademie.co.ke",
     },
+    admissions: {
+      id: "adm-ops-1",
+      name: "Brian Kipkorir (Admissions)",
+      username: username || "bkipkorir",
+      role: "admissions",
+      email: "admissions@deutschakademie.co.ke",
+    },
+    registrar: {
+      id: "reg-1",
+      name: "Dr. Elena Schmidt (Registrar)",
+      username: username || "eschmidt",
+      role: "registrar",
+      email: "registrar@deutschakademie.co.ke",
+    },
+    library: {
+      id: "lib-1",
+      name: "Clara Mwangi (Librarian)",
+      username: username || "cmwangi",
+      role: "library",
+      email: "library@deutschakademie.co.ke",
+    },
+    ict: {
+      id: "ict-1",
+      name: "Kevin Omondi (Systems Eng)",
+      username: username || "komondi",
+      role: "ict",
+      email: "ict@deutschakademie.co.ke",
+    },
   };
   const u = presets[role];
   setUser(u);
@@ -81,4 +109,8 @@ export const roleHome: Record<Role, string> = {
   admin: "/app/dashboard",
   parent: "/app/dashboard",
   hr: "/app/dashboard",
+  admissions: "/app/dashboard",
+  registrar: "/app/dashboard",
+  library: "/app/dashboard",
+  ict: "/app/dashboard",
 };

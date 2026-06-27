@@ -16,93 +16,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-
-interface NavItem { to: string; label: string; icon: React.ComponentType<{ className?: string }> }
-interface NavGroup { label: string; items: NavItem[] }
-
-const NAV: Record<Role, NavGroup[]> = {
-  student: [
-    { label: "Overview", items: [
-      { to: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
-      { to: "/app/attendance", label: "My Attendance", icon: CalendarCheck2 },
-      { to: "/app/results", label: "Academic Results", icon: FileBarChart2 },
-      { to: "/app/certificates", label: "My Certificates", icon: Award },
-    ]},
-    { label: "Finance", items: [
-      { to: "/app/finance", label: "Fee Statement", icon: Wallet },
-      { to: "/app/receipts", label: "My Receipts", icon: ReceiptText },
-    ]},
-    { label: "Account", items: [
-      { to: "/app/profile", label: "Profile", icon: User },
-    ]},
-  ],
-  teacher: [
-    { label: "Teaching", items: [
-      { to: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
-      { to: "/app/students", label: "Students", icon: Users },
-      { to: "/app/marks", label: "Marks Entry", icon: ClipboardEdit },
-      { to: "/app/results", label: "Results Management", icon: FileBarChart2 },
-      { to: "/app/certificates", label: "Certificates", icon: Award },
-    ]},
-    { label: "Operations", items: [
-      { to: "/app/attendance", label: "Attendance", icon: CalendarCheck2 },
-      { to: "/app/reports", label: "Reports", icon: BarChart3 },
-    ]},
-    { label: "Account", items: [
-      { to: "/app/profile", label: "Profile", icon: User },
-    ]},
-  ],
-  accountant: [
-    { label: "Finance", items: [
-      { to: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
-      { to: "/app/payments", label: "Payments", icon: CreditCard },
-      { to: "/app/allocations", label: "Allocations", icon: Layers3 },
-      { to: "/app/receipts", label: "Receipts", icon: ReceiptText },
-      { to: "/app/finance-reports", label: "Finance Reports", icon: FileSpreadsheet },
-    ]},
-    { label: "Account", items: [
-      { to: "/app/profile", label: "Profile", icon: User },
-    ]},
-  ],
-  admin: [
-    { label: "Administration", items: [
-      { to: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
-      { to: "/app/users", label: "User Management", icon: Users },
-      { to: "/app/roles", label: "Role Management", icon: ShieldCheck },
-    ]},
-    { label: "Academic", items: [
-      { to: "/app/academic", label: "Academic Setup", icon: BookCopy },
-      { to: "/app/fee-structure", label: "Fee Structure", icon: Wallet },
-      { to: "/app/certificates", label: "Certificates", icon: Award },
-    ]},
-    { label: "System & HR", items: [
-      { to: "/app/hr", label: "HR Management", icon: Briefcase },
-      { to: "/app/settings", label: "Settings", icon: Settings },
-      { to: "/app/audit-logs", label: "Audit Logs", icon: ScrollText },
-    ]},
-  ],
-  parent: [
-    { label: "Parent Portal", items: [
-      { to: "/app/dashboard", label: "Overview", icon: LayoutDashboard },
-      { to: "/app/receipts", label: "Receipts", icon: ReceiptText },
-    ]},
-    { label: "Account", items: [
-      { to: "/app/profile", label: "Profile", icon: User },
-    ]},
-  ],
-  hr: [
-    { label: "HR Management", items: [
-      { to: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
-      { to: "/app/hr", label: "Staff & Payroll", icon: Briefcase },
-    ]},
-    { label: "Account", items: [
-      { to: "/app/profile", label: "Profile", icon: User },
-    ]},
-  ],
-};
+import { NAV } from "@/layouts/nav-config";
 
 const roleLabel: Record<Role, string> = {
   student: "Student", teacher: "Teacher", accountant: "Accountant", admin: "Administrator", parent: "Parent / Guardian", hr: "HR Manager",
+  admissions: "Admissions Officer", registrar: "Registrar", library: "Librarian", ict: "ICT Administrator",
 };
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -110,6 +28,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
   const [user, setUserState] = useState<AuthUser | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [cmdOpen, setCmdOpen] = useState(false);
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const { theme, toggle } = useTheme();
 
   useEffect(() => {
@@ -118,8 +38,23 @@ export function AppShell({ children }: { children: ReactNode }) {
     setUserState(u);
   }, [navigate]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setCmdOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   if (!user) return null;
-  const groups = NAV[user.role];
+  const groups = NAV[user.role] || [];
+
+  const toggleGroup = (label: string) => {
+    setCollapsedGroups((prev) => ({ ...prev, [label]: !prev[label] }));
+  };
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -143,37 +78,49 @@ export function AppShell({ children }: { children: ReactNode }) {
             <X className="size-5" />
           </button>
         </div>
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
-          {groups.map((g) => (
-            <div key={g.label}>
-              <div className="px-3 mb-2 text-[10px] uppercase tracking-wider text-sidebar-foreground/50">{g.label}</div>
-              <ul className="space-y-0.5">
-                {g.items.map((it) => {
-                  const active = pathname === it.to;
-                  return (
-                    <li key={it.to}>
-                      <Link
-                        to={it.to}
-                        onClick={() => setMobileOpen(false)}
-                        className={cn(
-                          "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
-                          active
-                            ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
-                            : "text-sidebar-foreground/85 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                        )}
-                      >
-                        <it.icon className="size-4" />
-                        {it.label}
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          ))}
+        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-4">
+          {groups.map((g) => {
+            const isCollapsed = collapsedGroups[g.label];
+            return (
+              <div key={g.label} className="space-y-1">
+                <button
+                  onClick={() => toggleGroup(g.label)}
+                  className="w-full flex items-center justify-between px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-sidebar-foreground/60 hover:text-sidebar-foreground transition-colors rounded"
+                >
+                  <span>{g.label}</span>
+                  <ChevronDown className={cn("size-3 transition-transform", isCollapsed && "-rotate-90")} />
+                </button>
+                {!isCollapsed && (
+                  <ul className="space-y-0.5">
+                    {g.items.map((it) => {
+                      const active = pathname === it.to;
+                      return (
+                        <li key={it.to}>
+                          <Link
+                            to={it.to}
+                            onClick={() => setMobileOpen(false)}
+                            className={cn(
+                              "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
+                              active
+                                ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm font-medium"
+                                : "text-sidebar-foreground/85 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                            )}
+                          >
+                            <it.icon className="size-4" />
+                            {it.label}
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            );
+          })}
         </nav>
-        <div className="p-4 border-t border-sidebar-border text-xs opacity-70">
-          v1.0 · © {new Date().getFullYear()}
+        <div className="p-4 border-t border-sidebar-border text-xs opacity-70 flex items-center justify-between">
+          <span>v1.0 · © {new Date().getFullYear()}</span>
+          <button onClick={() => setCmdOpen(true)} className="px-1.5 py-0.5 rounded bg-sidebar-accent text-[10px] font-mono">⌘K</button>
         </div>
       </aside>
 
@@ -182,9 +129,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           <button className="lg:hidden" onClick={() => setMobileOpen(true)}><Menu className="size-5" /></button>
           <Breadcrumbs pathname={pathname} />
           <div className="ml-auto flex items-center gap-2">
-            <div className="hidden md:flex relative w-72">
-              <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input placeholder="Search students, receipts…" className="pl-9 h-9 bg-muted/40" />
+            <div className="hidden md:flex relative w-72" onClick={() => setCmdOpen(true)}>
+              <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground cursor-pointer" />
+              <Input readOnly placeholder="Search menu & quick actions (⌘K)..." className="pl-9 h-9 bg-muted/40 cursor-pointer" />
             </div>
             <Button variant="ghost" size="icon" onClick={toggle} aria-label="Toggle theme">
               {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
@@ -195,6 +142,39 @@ export function AppShell({ children }: { children: ReactNode }) {
         </header>
         <main className="p-4 sm:p-6 lg:p-8">{children}</main>
       </div>
+
+      {cmdOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-start justify-center pt-[15vh] p-4 animate-fadeIn" onClick={() => setCmdOpen(false)}>
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="p-4 border-b border-slate-800 flex items-center gap-3">
+              <Search className="size-5 text-red-500" />
+              <input
+                autoFocus
+                type="text"
+                placeholder="Type a command or search modules..."
+                className="w-full bg-transparent text-white placeholder-slate-500 focus:outline-none text-sm"
+                onChange={(e) => {
+                  // simple filter logic could go here
+                }}
+              />
+              <button onClick={() => setCmdOpen(false)} className="text-slate-500 hover:text-white text-xs px-2 py-1 rounded bg-slate-800">ESC</button>
+            </div>
+            <div className="max-h-80 overflow-y-auto p-2 space-y-1">
+              <div className="px-3 py-1.5 text-[11px] font-bold uppercase text-slate-500">Navigation Links</div>
+              {groups.flatMap(g => g.items).map((it) => (
+                <button
+                  key={it.to}
+                  onClick={() => { navigate(it.to); setCmdOpen(false); }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-300 hover:text-white hover:bg-slate-800 transition-colors text-left"
+                >
+                  <it.icon className="size-4 text-red-400" />
+                  <span>{it.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

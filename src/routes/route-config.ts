@@ -7,6 +7,10 @@ export const roleHome: Record<Role, string> = {
   admin: "/app/dashboard",
   parent: "/app/dashboard",
   hr: "/app/dashboard",
+  admissions: "/app/dashboard",
+  registrar: "/app/dashboard",
+  library: "/app/dashboard",
+  ict: "/app/dashboard",
 };
 
 export const roleLabel: Record<Role, string> = {
@@ -16,6 +20,10 @@ export const roleLabel: Record<Role, string> = {
   admin: "Administrator",
   parent: "Parent / Guardian",
   hr: "HR Manager",
+  admissions: "Admissions Officer",
+  registrar: "Registrar",
+  library: "Librarian",
+  ict: "ICT Administrator",
 };
 
 /**
@@ -24,9 +32,9 @@ export const roleLabel: Record<Role, string> = {
  * available to accountants (full management) and students (own receipts).
  */
 export const routeAccess: Record<string, Role[]> = {
-  "/app/dashboard": ["student", "teacher", "accountant", "admin", "parent", "hr"],
-  "/app/profile": ["student", "teacher", "accountant", "admin", "parent", "hr"],
-  "/app/communication": ["student", "teacher", "accountant", "admin", "parent", "hr"],
+  "/app/dashboard": ["student", "teacher", "accountant", "admin", "parent", "hr", "admissions", "registrar", "library", "ict"],
+  "/app/profile": ["student", "teacher", "accountant", "admin", "parent", "hr", "admissions", "registrar", "library", "ict"],
+  "/app/communication": ["student", "teacher", "accountant", "admin", "parent", "hr", "admissions", "registrar", "library", "ict"],
   "/app/hr": ["admin", "hr"],
   // Student / Parent
   "/app/results": ["student", "teacher", "parent"],

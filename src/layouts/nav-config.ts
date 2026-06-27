@@ -172,6 +172,68 @@ export const NAV: Record<Role, NavGroup[]> = {
       ],
     },
   ],
+  admissions: [
+    {
+      label: "Admissions Operations",
+      items: [
+        { to: "/app/dashboard", label: "Admissions KPI", icon: LayoutDashboard },
+        { to: "/app/admissions-queue", label: "Admissions Bridge", icon: Users },
+        { to: "/app/knowledge-base", label: "Handbooks & Policies", icon: ScrollText },
+        { to: "/app/communication", label: "Applicant Messaging", icon: MessageSquare },
+      ],
+    },
+    {
+      label: "Account",
+      items: [{ to: "/app/profile", label: "Profile", icon: User }],
+    },
+  ],
+  registrar: [
+    {
+      label: "Enrollment & Records",
+      items: [
+        { to: "/app/dashboard", label: "Registrar Overview", icon: LayoutDashboard },
+        { to: "/app/students", label: "Student Directory", icon: Users },
+        { to: "/app/levels", label: "CEFR Progression", icon: TrendingUp },
+        { to: "/app/certificates", label: "Certificates", icon: Award },
+        { to: "/app/reports", label: "Academic Reports", icon: BarChart3 },
+      ],
+    },
+    {
+      label: "Account",
+      items: [{ to: "/app/profile", label: "Profile", icon: User }],
+    },
+  ],
+  library: [
+    {
+      label: "Digital Library Hub",
+      items: [
+        { to: "/app/dashboard", label: "Library Catalog", icon: LayoutDashboard },
+        { to: "/app/library", label: "Manage Books & Media", icon: Library },
+        { to: "/app/lesson-resources", label: "Lesson Resources", icon: BookOpen },
+        { to: "/app/knowledge-base", label: "Knowledge Base", icon: ScrollText },
+      ],
+    },
+    {
+      label: "Account",
+      items: [{ to: "/app/profile", label: "Profile", icon: User }],
+    },
+  ],
+  ict: [
+    {
+      label: "System & Infrastructure",
+      items: [
+        { to: "/app/dashboard", label: "System Health", icon: LayoutDashboard },
+        { to: "/app/storage-dashboard", label: "Storage Telemetry", icon: Layers3 },
+        { to: "/app/users", label: "User Accounts", icon: Users },
+        { to: "/app/settings", label: "System Settings", icon: Settings },
+        { to: "/app/audit-logs", label: "Security Logs", icon: ScrollText },
+      ],
+    },
+    {
+      label: "Account",
+      items: [{ to: "/app/profile", label: "Profile", icon: User }],
+    },
+  ],
 };
 
 export { GraduationCap };

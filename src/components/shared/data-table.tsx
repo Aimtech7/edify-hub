@@ -17,6 +17,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
@@ -24,6 +33,10 @@ import {
   Download,
   ChevronLeft,
   ChevronRight,
+  SlidersHorizontal,
+  Printer,
+  FileSpreadsheet,
+  CheckSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { exportToCsv } from "@/utils/format";
@@ -74,6 +87,15 @@ export function DataTable<T extends Record<string, unknown>>({
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [page, setPage] = useState(1);
+  const [hiddenCols, setHiddenCols] = useState<Record<string, boolean>>({});
+
+  const visibleColumns = useMemo(() => {
+    return columns.filter((c) => !hiddenCols[c.key]);
+  }, [columns, hiddenCols]);
+
+  const toggleCol = (key: string) => {
+    setHiddenCols((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
   const processed = useMemo(() => {
     let rows = [...data];
@@ -123,15 +145,19 @@ export function DataTable<T extends Record<string, unknown>>({
     }
   };
 
-  const handleExport = () => {
+  const handleExportCsv = () => {
     const rows = processed.map((row) => {
       const out: Record<string, unknown> = {};
-      for (const c of columns) {
+      for (const c of visibleColumns) {
         out[c.header] = c.accessor ? c.accessor(row) : row[c.key as keyof T];
       }
       return out;
     });
     exportToCsv(rows, exportFilename || "export");
+  };
+
+  const handlePrint = () => {
+    window.print();
   };
 
   return (
@@ -176,20 +202,56 @@ export function DataTable<T extends Record<string, unknown>>({
             </Select>
           ))}
         </div>
-        {exportFilename && (
-          <Button variant="outline" size="sm" onClick={handleExport} className="gap-2">
-            <Download className="size-4" /> Export
-          </Button>
-        )}
+
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <SlidersHorizontal className="size-4" /> Columns
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuLabel>Toggle Columns</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {columns.map((c) => (
+                <DropdownMenuCheckboxItem
+                  key={c.key}
+                  checked={!hiddenCols[c.key]}
+                  onCheckedChange={() => toggleCol(c.key)}
+                >
+                  {c.header}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {exportFilename && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Download className="size-4" /> Export
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuItem onClick={handleExportCsv} className="gap-2 cursor-pointer">
+                  <FileSpreadsheet className="size-4 text-emerald-500" /> CSV / Excel
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handlePrint} className="gap-2 cursor-pointer">
+                  <Printer className="size-4 text-blue-500" /> Print / PDF View
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
       </div>
 
       {/* Table */}
       <div className="rounded-lg border border-border overflow-hidden bg-card">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto max-h-[70vh]">
           <Table>
-            <TableHeader>
+            <TableHeader className="sticky top-0 bg-card z-10 shadow-sm">
               <TableRow className="bg-muted/50 hover:bg-muted/50">
-                {columns.map((c) => (
+                {visibleColumns.map((c) => (
                   <TableHead key={c.key} className={c.className}>
                     {c.sortable ? (
                       <button
@@ -218,7 +280,7 @@ export function DataTable<T extends Record<string, unknown>>({
               {loading ? (
                 Array.from({ length: 4 }).map((_, i) => (
                   <TableRow key={i}>
-                    {columns.map((c) => (
+                    {visibleColumns.map((c) => (
                       <TableCell key={c.key}>
                         <div className="h-4 w-full max-w-32 rounded bg-muted animate-pulse" />
                       </TableCell>
@@ -228,7 +290,7 @@ export function DataTable<T extends Record<string, unknown>>({
               ) : paged.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={columns.length}
+                    colSpan={visibleColumns.length}
                     className="h-32 text-center text-muted-foreground"
                   >
                     {emptyMessage}
@@ -241,7 +303,7 @@ export function DataTable<T extends Record<string, unknown>>({
                     onClick={() => onRowClick?.(row)}
                     className={cn(onRowClick && "cursor-pointer")}
                   >
-                    {columns.map((c) => (
+                    {visibleColumns.map((c) => (
                       <TableCell key={c.key} className={c.className}>
                         {c.render ? c.render(row) : String(row[c.key as keyof T] ?? "")}
                       </TableCell>

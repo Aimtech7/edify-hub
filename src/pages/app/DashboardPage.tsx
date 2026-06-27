@@ -19,6 +19,8 @@ import { paymentService } from "@/services/payment-service";
 import type { Payment } from "@/types";
 import ParentPortal from "@/components/students/ParentPortal";
 import { HrPortal } from "@/components/hr/HrPortal";
+import { AdmissionsDash, RegistrarDash, LibraryDash, IctDash } from "@/components/dashboards/DepartmentDashboards";
+import { WorkflowTracker } from "@/components/shared/WorkflowTracker";
 
 export default function DashboardPage() {
   const user = useCurrentUser();
@@ -28,6 +30,10 @@ export default function DashboardPage() {
   if (user.role === "accountant") return <AccountantDash />;
   if (user.role === "parent") return <ParentPortal />;
   if (user.role === "hr") return <HrPortal />;
+  if (user.role === "admissions") return <AdmissionsDash />;
+  if (user.role === "registrar") return <RegistrarDash />;
+  if (user.role === "library") return <LibraryDash />;
+  if (user.role === "ict") return <IctDash />;
   return <AdminDash />;
 }
 
@@ -51,6 +57,10 @@ function StudentDash() {
         <StatCard label="Attendance Rate" value="93.3%" tone="success" icon={<Activity className="size-5" />} />
         <StatCard label="Total Fees" value={currency(me.totalFees)} icon={<Wallet className="size-5" />} />
         <StatCard label="Balance Due" value={currency(balance)} tone={balance > 0 ? "warning" : "success"} icon={<Clock className="size-5" />} />
+      </div>
+
+      <div className="mt-6">
+        <WorkflowTracker type="certificate" currentStepIndex={2} status="active" title="Goethe CEFR Certificate Pipeline" />
       </div>
 
       <div className="grid lg:grid-cols-3 gap-4 mt-6">
@@ -308,6 +318,10 @@ function AccountantDash() {
         <StatCard label="This month" value={currency(stats.monthlyCollections)} tone="info" icon={<TrendingUp className="size-5" />} />
         <StatCard label="Outstanding" value={currency(stats.outstandingAmount)} tone="warning" icon={<AlertTriangle className="size-5" />} />
         <StatCard label="Unallocated" value={currency(totalUnallocatedAmount)} hint={`${unallocated.length} pending split`} tone="destructive" icon={<ShieldAlert className="size-5" />} />
+      </div>
+
+      <div className="mt-6">
+        <WorkflowTracker type="finance" currentStepIndex={2} status="active" title="Tuition Payment & Reconciliation Lifecycle" />
       </div>
 
       {unallocated.length > 0 && (

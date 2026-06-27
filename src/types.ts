@@ -1,4 +1,4 @@
-export type Role = "student" | "teacher" | "accountant" | "admin" | "parent" | "hr";
+export type Role = "student" | "teacher" | "accountant" | "admin" | "parent" | "hr" | "admissions" | "registrar" | "library" | "ict";
 
 export type CefrLevel = "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
 

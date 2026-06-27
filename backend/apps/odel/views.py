@@ -2,10 +2,12 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.utils import timezone
+from django.db.models import Q, Avg, Count
 from odel.models import (
     Course, Subject, Unit, Module, Lesson, Topic, Resource, StudentLessonProgress,
     RecordedLecture, DiscussionForum, ForumThread, ForumPost, Assignment,
-    AssignmentSubmission, QuestionBank, Quiz, QuizQuestion, QuizAttempt, Gradebook
+    AssignmentSubmission, QuestionBank, Quiz, QuizQuestion, QuizAttempt, Gradebook,
+    OfficialExamination, ExamSessionLog, ExamSubmission
 )
 from odel.serializers import (
     CourseSerializer, SubjectSerializer, UnitSerializer, ModuleSerializer,
@@ -13,7 +15,8 @@ from odel.serializers import (
     RecordedLectureSerializer, DiscussionForumSerializer, ForumThreadSerializer,
     ForumPostSerializer, AssignmentSerializer, AssignmentSubmissionSerializer,
     QuestionBankSerializer, QuizSerializer, QuizQuestionSerializer, QuizAttemptSerializer,
-    GradebookSerializer
+    GradebookSerializer, OfficialExaminationSerializer, ExamSessionLogSerializer,
+    ExamSubmissionSerializer
 )
 from accounts.permissions import IsStaffOrReadOnly
 
@@ -184,3 +187,229 @@ class GradebookViewSet(viewsets.ModelViewSet):
     queryset = Gradebook.objects.all()
     serializer_class = GradebookSerializer
     permission_classes = [IsStaffOrReadOnly]
+
+
+class OfficialExaminationViewSet(viewsets.ModelViewSet):
+    serializer_class = OfficialExaminationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if not user.is_authenticated:
+            return OfficialExamination.objects.none()
+        if user.role != 'STUDENT':
+            return OfficialExamination.objects.all().order_by('-start_datetime')
+        
+        from students.models import Student
+        student = Student.objects.filter(user=user).first()
+        if not student:
+            return OfficialExamination.objects.filter(publish_status=OfficialExamination.PublishStatus.PUBLISHED).order_by('-start_datetime')
+            
+        # Eligible if level matches, or explicitly assigned in eligible_students
+        return OfficialExamination.objects.filter(
+            Q(publish_status=OfficialExamination.PublishStatus.PUBLISHED) &
+            (Q(level=student.current_level) | Q(eligible_students=student))
+        ).distinct().order_by('-start_datetime')
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
+    @action(detail=True, methods=['post'], url_path='start-session')
+    def start_session(self, request, pk=None):
+        exam = self.get_object()
+        user = request.user
+        from students.models import Student
+        student = Student.objects.filter(user=user).first()
+        if not student:
+            return Response({'error': 'Student profile not found'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        now = timezone.now()
+        if now < exam.start_datetime:
+            return Response({'error': 'Examination has not started yet'}, status=status.HTTP_403_FORBIDDEN)
+            
+        sess, created = ExamSessionLog.objects.get_or_create(
+            examination=exam,
+            student=student,
+            defaults={
+                'opened_at': now,
+                'pdf_viewed_at': now,
+                'browser_info': request.META.get('HTTP_USER_AGENT', '')[:250],
+                'ip_address': request.META.get('REMOTE_ADDR')
+            }
+        )
+        if not created and not sess.opened_at:
+            sess.opened_at = now
+            sess.pdf_viewed_at = now
+            sess.save()
+            
+        return Response(ExamSessionLogSerializer(sess).data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], url_path='log-event')
+    def log_event(self, request, pk=None):
+        exam = self.get_object()
+        from students.models import Student
+        student = Student.objects.filter(user=request.user).first()
+        if not student:
+            return Response({'error': 'Student profile not found'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        sess = ExamSessionLog.objects.filter(examination=exam, student=student).order_by('-started_at').first()
+        if not sess:
+            return Response({'error': 'Active session not found'}, status=status.HTTP_404_NOT_FOUND)
+            
+        event_type = request.data.get('event_type')
+        if event_type == 'focus_change':
+            sess.focus_change_count += 1
+            if sess.focus_change_count >= 5:
+                sess.flagged_for_review = True
+        elif event_type == 'interruption':
+            sess.connection_interruptions += 1
+        elif event_type == 'download':
+            sess.downloaded_at = timezone.now()
+            
+        duration = request.data.get('session_duration_seconds')
+        if duration:
+            sess.session_duration_seconds = int(duration)
+            
+        sess.save()
+        return Response(ExamSessionLogSerializer(sess).data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], url_path='submit-script')
+    def submit_script(self, request, pk=None):
+        exam = self.get_object()
+        from students.models import Student
+        student = Student.objects.filter(user=request.user).first()
+        if not student:
+            return Response({'error': 'Student profile not found'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        file_obj = request.FILES.get('uploaded_file')
+        if not file_obj:
+            return Response({'error': 'No examination file uploaded'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        now = timezone.now()
+        is_late = now > exam.end_datetime
+        if is_late and exam.late_submission_policy == OfficialExamination.LatePolicy.REJECT:
+            return Response({'error': 'Late submissions are rejected for this examination'}, status=status.HTTP_403_FORBIDDEN)
+            
+        attempts_count = ExamSubmission.objects.filter(examination=exam, student=student).count()
+        if attempts_count >= exam.allowed_attempts:
+            return Response({'error': 'Maximum submission attempts exceeded'}, status=status.HTTP_403_FORBIDDEN)
+            
+        sub = ExamSubmission.objects.create(
+            examination=exam,
+            student=student,
+            attempt_number=attempts_count + 1,
+            uploaded_file=file_obj,
+            file_type=file_obj.name.split('.')[-1].upper() if '.' in file_obj.name else 'FILE',
+            file_size_bytes=file_obj.size,
+            is_late=is_late
+        )
+        
+        # Update session log submitted_at
+        sess = ExamSessionLog.objects.filter(examination=exam, student=student).order_by('-started_at').first()
+        if sess:
+            sess.submitted_at = now
+            sess.save()
+            
+        return Response(ExamSubmissionSerializer(sub, context={'request': request}).data, status=status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=['get'], url_path='reports')
+    def reports(self, request):
+        if request.user.role == 'STUDENT':
+            return Response({'error': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+            
+        total_exams = OfficialExamination.objects.count()
+        published_exams = OfficialExamination.objects.filter(publish_status=OfficialExamination.PublishStatus.PUBLISHED).count()
+        total_submissions = ExamSubmission.objects.count()
+        late_submissions = ExamSubmission.objects.filter(is_late=True).count()
+        graded_submissions = ExamSubmission.objects.filter(marking_status__in=['GRADED', 'PUBLISHED']).count()
+        
+        # Calculate pass/fail based on marks obtained vs passing marks
+        graded_qs = ExamSubmission.objects.filter(marking_status__in=['GRADED', 'PUBLISHED'], marks_obtained__isnull=False)
+        passed_count = 0
+        failed_count = 0
+        total_score = 0
+        for g in graded_qs:
+            total_score += float(g.marks_obtained)
+            if g.marks_obtained >= g.examination.passing_marks:
+                passed_count += 1
+            else:
+                failed_count += 1
+                
+        avg_score = round(total_score / len(graded_qs), 1) if len(graded_qs) > 0 else 0
+        pass_rate = round((passed_count / len(graded_qs)) * 100, 1) if len(graded_qs) > 0 else 0
+        
+        return Response({
+            'total_exams': total_exams,
+            'published_exams': published_exams,
+            'total_submissions': total_submissions,
+            'late_submissions': late_submissions,
+            'graded_submissions': graded_submissions,
+            'passed_count': passed_count,
+            'failed_count': failed_count,
+            'pass_rate': pass_rate,
+            'average_score': avg_score
+        })
+
+
+class ExamSessionLogViewSet(viewsets.ModelViewSet):
+    queryset = ExamSessionLog.objects.all().order_by('-started_at')
+    serializer_class = ExamSessionLogSerializer
+    permission_classes = [IsStaffOrReadOnly]
+
+
+class ExamSubmissionViewSet(viewsets.ModelViewSet):
+    serializer_class = ExamSubmissionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if not user.is_authenticated:
+            return ExamSubmission.objects.none()
+        if user.role != 'STUDENT':
+            return ExamSubmission.objects.all().order_by('-submitted_at')
+        from students.models import Student
+        student = Student.objects.filter(user=user).first()
+        if not student:
+            return ExamSubmission.objects.none()
+        return ExamSubmission.objects.filter(student=student).order_by('-submitted_at')
+
+    @action(detail=True, methods=['post'], url_path='mark')
+    def mark(self, request, pk=None):
+        if request.user.role == 'STUDENT':
+            return Response({'error': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+            
+        sub = self.get_object()
+        marks = request.data.get('marks_obtained')
+        feedback = request.data.get('teacher_feedback', '')
+        status_val = request.data.get('marking_status', 'GRADED')
+        marked_file = request.FILES.get('marked_script')
+        
+        if marks is not None:
+            sub.marks_obtained = float(marks)
+            # Apply late penalty if applicable
+            if sub.is_late and sub.examination.late_submission_policy == OfficialExamination.LatePolicy.PENALTY:
+                penalty = float(sub.examination.late_penalty_percentage) / 100.0
+                sub.marks_obtained = max(0, float(sub.marks_obtained) * (1.0 - penalty))
+                
+            # Grade text calculation
+            pct = (float(sub.marks_obtained) / float(sub.examination.maximum_marks)) * 100 if sub.examination.maximum_marks > 0 else 0
+            if pct >= 90: sub.grade = "Sehr Gut"
+            elif pct >= 80: sub.grade = "Gut"
+            elif pct >= 70: sub.grade = "Befriedigend"
+            elif pct >= 60: sub.grade = "Ausreichend"
+            else: sub.grade = "Nicht Bestanden"
+            
+        if feedback:
+            sub.teacher_feedback = feedback
+        if marked_file:
+            sub.marked_script = marked_file
+            
+        sub.marking_status = status_val
+        sub.graded_by = request.user
+        sub.graded_at = timezone.now()
+        if status_val == 'PUBLISHED':
+            sub.published_at = timezone.now()
+            
+        sub.save()
+        return Response(ExamSubmissionSerializer(sub, context={'request': request}).data, status=status.HTTP_200_OK)
+

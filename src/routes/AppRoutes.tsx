@@ -46,6 +46,8 @@ import AdmissionsQueuePage from "@/pages/app/AdmissionsQueuePage";
 import LessonResourcesPage from "@/pages/dms/LessonResourcesPage";
 import KnowledgeBasePage from "@/pages/dms/KnowledgeBasePage";
 import StorageDashboardPage from "@/pages/dms/StorageDashboardPage";
+import { SecureExamsPage } from "@/pages/app/SecureExamsPage";
+import { ExamManagementPage } from "@/pages/app/ExamManagementPage";
 
 import PublicVerifyPage from "@/pages/PublicVerifyPage";
 import AdmissionsPortalPage from "@/pages/AdmissionsPortalPage";
@@ -295,6 +297,22 @@ export default function AppRoutes() {
           element={
             <RoleProtectedRoute allowed={["admin"]}>
               <StorageDashboardPage />
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
+          path="secure-exams"
+          element={
+            <RoleProtectedRoute allowed={["student", "teacher", "admin"]}>
+              <SecureExamsPage />
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
+          path="exam-management"
+          element={
+            <RoleProtectedRoute allowed={["teacher", "admin"]}>
+              <ExamManagementPage />
             </RoleProtectedRoute>
           }
         />

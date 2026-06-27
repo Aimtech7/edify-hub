@@ -4,7 +4,8 @@ from odel.views import (
     CourseViewSet, SubjectViewSet, UnitViewSet, ModuleViewSet, LessonViewSet,
     TopicViewSet, ResourceViewSet, RecordedLectureViewSet, DiscussionForumViewSet,
     ForumThreadViewSet, ForumPostViewSet, AssignmentViewSet, AssignmentSubmissionViewSet,
-    QuestionBankViewSet, QuizViewSet, QuizQuestionViewSet, QuizAttemptViewSet, GradebookViewSet
+    QuestionBankViewSet, QuizViewSet, QuizQuestionViewSet, QuizAttemptViewSet, GradebookViewSet,
+    OfficialExaminationViewSet, ExamSessionLogViewSet, ExamSubmissionViewSet
 )
 
 router = DefaultRouter()
@@ -26,6 +27,9 @@ router.register('quizzes', QuizViewSet, basename='odel-quiz')
 router.register('quiz-questions', QuizQuestionViewSet, basename='odel-quiz-question')
 router.register('quiz-attempts', QuizAttemptViewSet, basename='odel-quiz-attempt')
 router.register('gradebooks', GradebookViewSet, basename='odel-gradebook')
+router.register('formal-exams', OfficialExaminationViewSet, basename='odel-formal-exam')
+router.register('formal-sessions', ExamSessionLogViewSet, basename='odel-formal-session')
+router.register('formal-submissions', ExamSubmissionViewSet, basename='odel-formal-submission')
 
 urlpatterns = [
     path('', include(router.urls)),

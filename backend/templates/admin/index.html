@@ -4,7 +4,7 @@
 {% block content %}
 <div id="content-main" class="p-4 space-y-8 bg-slate-50 dark:bg-slate-900 min-h-screen text-slate-800 dark:text-slate-100 rounded-xl">
   
-  {/* Enterprise Hero Welcome */}
+  <!-- Enterprise Hero Welcome -->
   <div class="bg-gradient-to-r from-[#0F172A] via-[#1E293B] to-[#0F172A] text-white p-6 rounded-2xl shadow-xl border-l-8 border-[#DC2626] relative overflow-hidden">
     <div class="absolute -right-10 -top-10 opacity-10 text-9xl text-[#EAB308]">
       <i class="fa-solid fa-building-columns"></i>
@@ -24,54 +24,54 @@
     </div>
   </div>
 
-  {/* 10 Summary Statistics Cards */}
+  <!-- 10 Summary Statistics Cards -->
   <div>
     <h2 class="text-lg font-bold text-[#0F172A] dark:text-white mb-4 flex items-center gap-2">
       <i class="fa-solid fa-chart-line text-[#DC2626]"></i> Executive Key Performance Indicators
     </h2>
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
       
-      {/* Card 1 */}
+      <!-- Card 1 -->
       <div class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow border border-slate-200 dark:border-slate-700 hover:border-[#DC2626] transition">
         <div class="flex justify-between items-start">
           <span class="text-xs font-semibold text-slate-500 uppercase">Total Students</span>
           <span class="p-2 bg-blue-100 dark:bg-blue-900/40 text-blue-600 rounded-lg"><i class="fa-solid fa-user-graduate"></i></span>
         </div>
-        <div class="text-2xl font-black mt-2">1,284</div>
+        <div class="text-2xl font-black mt-2">{{ total_students|default:"0" }}</div>
         <div class="text-xs text-emerald-600 font-semibold mt-1"><i class="fa-solid fa-arrow-up"></i> +12.4% this month</div>
       </div>
 
-      {/* Card 2 */}
+      <!-- Card 2 -->
       <div class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow border border-slate-200 dark:border-slate-700 hover:border-[#DC2626] transition">
         <div class="flex justify-between items-start">
           <span class="text-xs font-semibold text-slate-500 uppercase">Applicants</span>
           <span class="p-2 bg-amber-100 dark:bg-amber-900/40 text-amber-600 rounded-lg"><i class="fa-solid fa-file-pen"></i></span>
         </div>
-        <div class="text-2xl font-black mt-2">142</div>
+        <div class="text-2xl font-black mt-2">{{ total_applicants|default:"0" }}</div>
         <div class="text-xs text-amber-600 font-semibold mt-1">Pending review queue</div>
       </div>
 
-      {/* Card 3 */}
+      <!-- Card 3 -->
       <div class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow border border-slate-200 dark:border-slate-700 hover:border-[#DC2626] transition">
         <div class="flex justify-between items-start">
           <span class="text-xs font-semibold text-slate-500 uppercase">Teachers</span>
           <span class="p-2 bg-purple-100 dark:bg-purple-900/40 text-purple-600 rounded-lg"><i class="fa-solid fa-chalkboard-user"></i></span>
         </div>
-        <div class="text-2xl font-black mt-2">38</div>
+        <div class="text-2xl font-black mt-2">{{ total_teachers|default:"0" }}</div>
         <div class="text-xs text-slate-500 mt-1">Active instructors</div>
       </div>
 
-      {/* Card 4 */}
+      <!-- Card 4 -->
       <div class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow border border-slate-200 dark:border-slate-700 hover:border-[#DC2626] transition">
         <div class="flex justify-between items-start">
           <span class="text-xs font-semibold text-slate-500 uppercase">Staff Members</span>
           <span class="p-2 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 rounded-lg"><i class="fa-solid fa-user-tie"></i></span>
         </div>
-        <div class="text-2xl font-black mt-2">24</div>
+        <div class="text-2xl font-black mt-2">{{ total_staff|default:"0" }}</div>
         <div class="text-xs text-slate-500 mt-1">Admin & Ops team</div>
       </div>
 
-      {/* Card 5 */}
+      <!-- Card 5 -->
       <div class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow border border-slate-200 dark:border-slate-700 hover:border-[#DC2626] transition">
         <div class="flex justify-between items-start">
           <span class="text-xs font-semibold text-slate-500 uppercase">Campuses</span>
@@ -81,60 +81,60 @@
         <div class="text-xs text-slate-500 mt-1">4 physical + 1 virtual</div>
       </div>
 
-      {/* Card 6 */}
+      <!-- Card 6 -->
       <div class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow border border-slate-200 dark:border-slate-700 hover:border-[#DC2626] transition">
         <div class="flex justify-between items-start">
           <span class="text-xs font-semibold text-slate-500 uppercase">Active Courses</span>
           <span class="p-2 bg-cyan-100 dark:bg-cyan-900/40 text-cyan-600 rounded-lg"><i class="fa-solid fa-book-open"></i></span>
         </div>
-        <div class="text-2xl font-black mt-2">14</div>
+        <div class="text-2xl font-black mt-2">{{ total_programs|default:"0" }}</div>
         <div class="text-xs text-slate-500 mt-1">CEFR A1 to C2 & Ausbildung</div>
       </div>
 
-      {/* Card 7 */}
+      <!-- Card 7 -->
       <div class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow border border-slate-200 dark:border-slate-700 hover:border-[#DC2626] transition">
         <div class="flex justify-between items-start">
           <span class="text-xs font-semibold text-slate-500 uppercase">Revenue Today</span>
           <span class="p-2 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 rounded-lg"><i class="fa-solid fa-coins"></i></span>
         </div>
-        <div class="text-2xl font-black text-emerald-600 mt-2">KES 485.0K</div>
+        <div class="text-2xl font-black text-emerald-600 mt-2">KES {{ revenue_today|default:"0" }}</div>
         <div class="text-xs text-emerald-600 font-semibold mt-1"><i class="fa-solid fa-arrow-up"></i> +8.4% vs daily avg</div>
       </div>
 
-      {/* Card 8 */}
+      <!-- Card 8 -->
       <div class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow border border-slate-200 dark:border-slate-700 hover:border-[#DC2626] transition">
         <div class="flex justify-between items-start">
           <span class="text-xs font-semibold text-slate-500 uppercase">Outstanding Balances</span>
           <span class="p-2 bg-rose-100 dark:bg-rose-900/40 text-rose-600 rounded-lg"><i class="fa-solid fa-credit-card"></i></span>
         </div>
-        <div class="text-2xl font-black text-rose-600 mt-2">KES 2.45M</div>
-        <div class="text-xs text-rose-500 mt-1">Across 340 active students</div>
+        <div class="text-2xl font-black text-rose-600 mt-2">{{ total_receipts|default:"0" }} receipts</div>
+        <div class="text-xs text-rose-500 mt-1">Total receipt records</div>
       </div>
 
-      {/* Card 9 */}
+      <!-- Card 9 -->
       <div class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow border border-slate-200 dark:border-slate-700 hover:border-[#DC2626] transition">
         <div class="flex justify-between items-start">
           <span class="text-xs font-semibold text-slate-500 uppercase">Receipts Issued</span>
           <span class="p-2 bg-teal-100 dark:bg-teal-900/40 text-teal-600 rounded-lg"><i class="fa-solid fa-receipt"></i></span>
         </div>
-        <div class="text-2xl font-black mt-2">1,890</div>
-        <div class="text-xs text-slate-500 mt-1">FY 2025/2026 ledger</div>
+        <div class="text-2xl font-black mt-2">{{ total_certificates|default:"0" }}</div>
+        <div class="text-xs text-slate-500 mt-1">Verified certificates</div>
       </div>
 
-      {/* Card 10 */}
+      <!-- Card 10 -->
       <div class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow border border-slate-200 dark:border-slate-700 hover:border-[#DC2626] transition">
         <div class="flex justify-between items-start">
           <span class="text-xs font-semibold text-slate-500 uppercase">Certificates Issued</span>
           <span class="p-2 bg-yellow-100 dark:bg-yellow-900/40 text-[#EAB308] rounded-lg"><i class="fa-solid fa-certificate"></i></span>
         </div>
-        <div class="text-2xl font-black text-[#0F172A] dark:text-[#EAB308] mt-2">450</div>
-        <div class="text-xs text-slate-500 mt-1">Goethe & Horizon verified</div>
+        <div class="text-2xl font-black text-[#0F172A] dark:text-[#EAB308] mt-2">{{ attendance_rate|default:"0" }}%</div>
+        <div class="text-xs text-slate-500 mt-1">Weekly avg attendance</div>
       </div>
 
     </div>
   </div>
 
-  {/* Quick Actions Bar */}
+  <!-- Quick Actions Bar -->
   <div class="bg-white dark:bg-slate-800 p-5 rounded-xl shadow border border-slate-200 dark:border-slate-700">
     <h2 class="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
       <i class="fa-solid fa-bolt text-[#EAB308]"></i> Enterprise Quick Action Center
@@ -164,10 +164,10 @@
     </div>
   </div>
 
-  {/* Analytics Charts Grid */}
+  <!-- Analytics Charts Grid -->
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     
-    {/* Chart 1: Revenue Trends */}
+    <!-- Chart 1: Revenue Trends -->
     <div class="bg-white dark:bg-slate-800 p-5 rounded-xl shadow border border-slate-200 dark:border-slate-700">
       <h3 class="font-bold text-sm text-slate-700 dark:text-slate-200 mb-4 flex items-center justify-between">
         <span><i class="fa-solid fa-chart-area text-emerald-600 mr-2"></i> Monthly Revenue Trends (KES)</span>
@@ -176,16 +176,16 @@
       <div class="h-64"><canvas id="revenueChart"></canvas></div>
     </div>
 
-    {/* Chart 2: Enrollment by Course */}
+    <!-- Chart 2: Enrollment by Course -->
     <div class="bg-white dark:bg-slate-800 p-5 rounded-xl shadow border border-slate-200 dark:border-slate-700">
       <h3 class="font-bold text-sm text-slate-700 dark:text-slate-200 mb-4 flex items-center justify-between">
         <span><i class="fa-solid fa-chart-bar text-blue-600 mr-2"></i> Student Enrollment by CEFR Band</span>
-        <span class="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-mono">1,284 Active</span>
+        <span class="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-mono">{{ total_students|default:"0" }} Active</span>
       </h3>
       <div class="h-64"><canvas id="enrollmentChart"></canvas></div>
     </div>
 
-    {/* Chart 3: Campus Distribution */}
+    <!-- Chart 3: Campus Distribution -->
     <div class="bg-white dark:bg-slate-800 p-5 rounded-xl shadow border border-slate-200 dark:border-slate-700">
       <h3 class="font-bold text-sm text-slate-700 dark:text-slate-200 mb-4 flex items-center justify-between">
         <span><i class="fa-solid fa-chart-pie text-[#DC2626] mr-2"></i> Campus Student Distribution</span>
@@ -194,7 +194,7 @@
       <div class="h-64 flex justify-center"><canvas id="campusChart"></canvas></div>
     </div>
 
-    {/* Chart 4: Attendance Rates */}
+    <!-- Chart 4: Attendance Rates -->
     <div class="bg-white dark:bg-slate-800 p-5 rounded-xl shadow border border-slate-200 dark:border-slate-700">
       <h3 class="font-bold text-sm text-slate-700 dark:text-slate-200 mb-4 flex items-center justify-between">
         <span><i class="fa-solid fa-chart-line text-purple-600 mr-2"></i> Daily Roster Attendance Rate (%)</span>
@@ -205,7 +205,7 @@
 
   </div>
 
-  {/* System Health Monitoring Grid */}
+  <!-- System Health Monitoring Grid -->
   <div class="bg-white dark:bg-slate-800 p-5 rounded-xl shadow border border-slate-200 dark:border-slate-700">
     <h2 class="text-sm font-bold uppercase tracking-wider text-slate-500 mb-4 flex items-center gap-2">
       <i class="fa-solid fa-server text-emerald-500"></i> Live Infrastructure & Gateway Diagnostics
@@ -256,7 +256,7 @@
     </div>
   </div>
 
-  {/* Standard Django Admin Models List */}
+  <!-- Standard Django Admin Models List -->
   <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow border border-slate-200 dark:border-slate-700">
     <h2 class="text-lg font-bold text-[#0F172A] dark:text-white mb-6 pb-2 border-b border-slate-200 dark:border-slate-700 flex items-center gap-2">
       <i class="fa-solid fa-database text-[#DC2626]"></i> Core Database Modules & Application Tables
@@ -297,7 +297,7 @@
 
 </div>
 
-{/* Chart.js Initialization Script */}
+<!-- Chart.js Initialization Script -->
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     // 1. Revenue Chart

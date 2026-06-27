@@ -1,3 +1,4 @@
+import uuid
 from django.db import models
 from django.conf import settings
 from academics.models import Level, Program, VirtualClass
@@ -304,3 +305,133 @@ class Gradebook(models.Model):
 
     def __str__(self):
         return f"Gradebook: {self.course.code}"
+
+
+# Enterprise Secure PDF Examination System (Formal Examinations)
+
+class OfficialExamination(models.Model):
+    class ExamType(models.TextChoices):
+        GOETHE_MOCK = "GOETHE_MOCK", "Goethe-Zertifikat Mock Exam"
+        MIDTERM = "MIDTERM", "Midterm Examination"
+        FINAL = "FINAL", "Final Semester Examination"
+        PLACEMENT = "PLACEMENT", "Placement Test"
+        CUSTOM = "CUSTOM", "Custom Assessment"
+
+    class PublishStatus(models.TextChoices):
+        DRAFT = "DRAFT", "Draft"
+        PUBLISHED = "PUBLISHED", "Published"
+        ARCHIVED = "ARCHIVED", "Archived"
+
+    class LatePolicy(models.TextChoices):
+        ALLOW = "ALLOW", "Allow Late Submission"
+        PENALTY = "PENALTY", "Allow with Mark Penalty"
+        REJECT = "REJECT", "Reject Late Submission"
+
+    title = models.CharField(max_length=255)
+    exam_code = models.CharField(max_length=100, unique=True)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='official_exams', null=True, blank=True)
+    level = models.ForeignKey(Level, on_delete=models.CASCADE, related_name='official_exams')
+    module = models.ForeignKey(Module, on_delete=models.SET_NULL, null=True, blank=True, related_name='official_exams')
+    semester = models.CharField(max_length=100, default="Semester 1")
+    academic_year = models.CharField(max_length=20, default="2026")
+    campus = models.CharField(max_length=100, default="Nairobi Main Campus")
+    cohort = models.CharField(max_length=100, blank=True)
+    exam_type = models.CharField(max_length=30, choices=ExamType.choices, default=ExamType.GOETHE_MOCK)
+    study_mode = models.CharField(max_length=50, default="Physical / Hybrid / Online")
+
+    duration_minutes = models.PositiveIntegerField(default=120)
+    maximum_marks = models.DecimalField(max_digits=6, decimal_places=2, default=100.00)
+    passing_marks = models.DecimalField(max_digits=6, decimal_places=2, default=60.00)
+
+    exam_instructions = models.TextField(blank=True)
+    submission_instructions = models.TextField(blank=True)
+    allowed_file_types = models.CharField(max_length=150, default="PDF, DOCX, JPG, PNG, ZIP")
+    allowed_attempts = models.PositiveIntegerField(default=1)
+
+    start_datetime = models.DateTimeField()
+    end_datetime = models.DateTimeField()
+    late_submission_policy = models.CharField(max_length=20, choices=LatePolicy.choices, default=LatePolicy.ALLOW)
+    late_penalty_percentage = models.FloatField(default=10.0)
+    publish_status = models.CharField(max_length=20, choices=PublishStatus.choices, default=PublishStatus.DRAFT)
+
+    exam_paper_pdf = models.FileField(upload_to='odel/formal_exams/', null=True, blank=True)
+    marking_rubric = models.FileField(upload_to='odel/rubrics/', null=True, blank=True)
+    eligible_students = models.ManyToManyField('students.Student', blank=True, related_name='assigned_official_exams')
+
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='created_formal_exams')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-start_datetime']
+
+    def __str__(self):
+        return f"{self.exam_code} - {self.title} ({self.level.code})"
+
+
+class ExamSessionLog(models.Model):
+    examination = models.ForeignKey(OfficialExamination, on_delete=models.CASCADE, related_name='session_logs')
+    student = models.ForeignKey('students.Student', on_delete=models.CASCADE, related_name='exam_sessions')
+    session_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    
+    started_at = models.DateTimeField(auto_now_add=True)
+    opened_at = models.DateTimeField(null=True, blank=True)
+    pdf_viewed_at = models.DateTimeField(null=True, blank=True)
+    downloaded_at = models.DateTimeField(null=True, blank=True)
+    submitted_at = models.DateTimeField(null=True, blank=True)
+
+    browser_info = models.CharField(max_length=255, blank=True)
+    device_info = models.CharField(max_length=255, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+
+    connection_interruptions = models.PositiveIntegerField(default=0)
+    focus_change_count = models.PositiveIntegerField(default=0)
+    flagged_for_review = models.BooleanField(default=False)
+    session_duration_seconds = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['-started_at']
+
+    def __str__(self):
+        return f"Session {self.session_id} - {self.student.admission_number} ({self.examination.exam_code})"
+
+
+class ExamSubmission(models.Model):
+    class MarkingStatus(models.TextChoices):
+        SUBMITTED = "SUBMITTED", "Submitted / Pending Marking"
+        UNDER_MARKING = "UNDER_MARKING", "Under Marking"
+        GRADED = "GRADED", "Graded"
+        PUBLISHED = "PUBLISHED", "Results Published"
+
+    examination = models.ForeignKey(OfficialExamination, on_delete=models.CASCADE, related_name='submissions')
+    student = models.ForeignKey('students.Student', on_delete=models.CASCADE, related_name='formal_exam_submissions')
+    receipt_number = models.CharField(max_length=100, unique=True, editable=False)
+    attempt_number = models.PositiveIntegerField(default=1)
+
+    uploaded_file = models.FileField(upload_to='odel/formal_submissions/')
+    file_type = models.CharField(max_length=50, blank=True)
+    file_size_bytes = models.PositiveIntegerField(default=0)
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    is_late = models.BooleanField(default=False)
+
+    marked_script = models.FileField(upload_to='odel/marked_scripts/', null=True, blank=True)
+    marks_obtained = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    grade = models.CharField(max_length=20, blank=True)
+    teacher_feedback = models.TextField(blank=True)
+    marking_status = models.CharField(max_length=20, choices=MarkingStatus.choices, default=MarkingStatus.SUBMITTED)
+    graded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='graded_exam_submissions')
+    graded_at = models.DateTimeField(null=True, blank=True)
+    published_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ['examination', 'student', 'attempt_number']
+        ordering = ['-submitted_at']
+
+    def save(self, *args, **kwargs):
+        if not self.receipt_number:
+            self.receipt_number = f"HEX-{uuid.uuid4().hex[:8].upper()}-{uuid.uuid4().hex[:4].upper()}"
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.receipt_number} - {self.student.admission_number} ({self.marks_obtained or 'Pending'})"
+

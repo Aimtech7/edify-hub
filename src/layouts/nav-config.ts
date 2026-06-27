@@ -22,6 +22,7 @@ import {
   MessageSquare,
   Briefcase,
   Library,
+  ShieldAlert,
 } from "lucide-react";
 import type { Role } from "@/types";
 
@@ -50,6 +51,7 @@ export const NAV: Record<Role, NavGroup[]> = {
         { to: "/app/attendance", label: "My Attendance",  icon: CalendarCheck2 },
         { to: "/app/results",   label: "Results",        icon: FileBarChart2 },
         { to: "/app/certificates", label: "My Certificates", icon: Award },
+        { to: "/app/secure-exams", label: "Formal Exams", icon: ShieldAlert },
       ],
     },
     {
@@ -80,6 +82,7 @@ export const NAV: Record<Role, NavGroup[]> = {
         { to: "/app/marks",      label: "Marks Entry",       icon: ClipboardEdit },
         { to: "/app/results",    label: "Results",           icon: FileBarChart2 },
         { to: "/app/certificates", label: "Certificates",     icon: Award },
+        { to: "/app/exam-management", label: "Exam Management", icon: ShieldAlert },
       ],
     },
     {
@@ -139,6 +142,7 @@ export const NAV: Record<Role, NavGroup[]> = {
         { to: "/app/academic",      label: "Academic Setup",   icon: BookCopy },
         { to: "/app/fee-structure", label: "Fee Structure",    icon: Wallet },
         { to: "/app/certificates",  label: "Certificates",     icon: Award },
+        { to: "/app/exam-management", label: "Formal Exams",   icon: ShieldAlert },
       ],
     },
     {

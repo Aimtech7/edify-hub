@@ -60,9 +60,9 @@ export default function LessonResourcesPage() {
   const fetchResources = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("token") || "";
+      const token = localStorage.getItem("horizon_access_token") || localStorage.getItem("access_token") || localStorage.getItem("token") || "";
       const res = await fetch("http://localhost:8000/api/dms/documents/?category=lesson-resources", {
-        headers: { Authorization: `Token ${token}` },
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (res.ok) {
         const data = await res.json();
@@ -87,7 +87,7 @@ export default function LessonResourcesPage() {
     }
     setUploadLoading(true);
     try {
-      const token = localStorage.getItem("token") || "";
+      const token = localStorage.getItem("horizon_access_token") || localStorage.getItem("access_token") || localStorage.getItem("token") || "";
       const formData = new FormData();
       formData.append("category", "lesson-resources");
       formData.append("title", title);
@@ -101,7 +101,7 @@ export default function LessonResourcesPage() {
 
       const res = await fetch("http://localhost:8000/api/dms/documents/", {
         method: "POST",
-        headers: { Authorization: `Token ${token}` },
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,
       });
 
@@ -126,10 +126,10 @@ export default function LessonResourcesPage() {
 
   const handleDownload = async (doc: Document) => {
     try {
-      const token = localStorage.getItem("token") || "";
+      const token = localStorage.getItem("horizon_access_token") || localStorage.getItem("access_token") || localStorage.getItem("token") || "";
       await fetch(`http://localhost:8000/api/dms/documents/${doc.id}/download/`, {
         method: "POST",
-        headers: { Authorization: `Token ${token}` },
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       window.open(doc.url, "_blank");
       setDocuments((prev) =>

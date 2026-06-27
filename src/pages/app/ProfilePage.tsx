@@ -1,20 +1,41 @@
+import React, { useState } from "react";
 import { PageHeader } from "@/components/ui-bits";
 import { useCurrentUser } from "@/components/app-shell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { STUDENTS, CEFR_LEVEL_INFO } from "@/lib/sample-data";
-import { Mail, Phone, GraduationCap, User as UserIcon, Globe, Calendar, Award } from "lucide-react";
+import { Mail, Phone, GraduationCap, User as UserIcon, Globe, Calendar, Award, Send, CheckCircle2 } from "lucide-react";
 import type { CefrLevel } from "@/types";
 
 export default function ProfilePage() {
   const user = useCurrentUser();
+  const [showModal, setShowModal] = useState(false);
+  const [newPhone, setNewPhone] = useState("+254 700 000000");
+  const [newAddress, setNewAddress] = useState("Nairobi, Kenya");
+  const [reason, setReason] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+
   if (!user) return null;
   const student = STUDENTS.find((s) => s.admissionNo === user.admissionNo);
 
+  const handleSubmitRequest = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitted(true);
+    setTimeout(() => {
+      setShowModal(false);
+      setSubmitted(false);
+      alert("Profile update request submitted to Horizon Academic Registry successfully!");
+    }, 1200);
+  };
+
   return (
     <>
-      <PageHeader title="My Profile" description="Personal information and learning record." action={<Button variant="outline">Request update</Button>} />
+      <PageHeader
+        title="My Profile"
+        description="Personal information and learning record."
+        action={<Button variant="outline" onClick={() => setShowModal(true)}>Request update</Button>}
+      />
       <div className="grid lg:grid-cols-3 gap-4">
         {/* Avatar card */}
         <Card className="shadow-card">
@@ -98,6 +119,71 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
       </div>
+
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fadeIn">
+          <div className="bg-card border border-border rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl text-card-foreground">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <h3 className="text-lg font-bold flex items-center gap-2">
+                <Send className="w-5 h-5 text-primary" /> Request Profile Update
+              </h3>
+              <button onClick={() => setShowModal(false)} className="text-muted-foreground hover:text-foreground">✕</button>
+            </div>
+
+            {submitted ? (
+              <div className="py-8 text-center space-y-3">
+                <CheckCircle2 className="w-12 h-12 text-success mx-auto animate-bounce" />
+                <p className="font-semibold text-lg">Submitting Request...</p>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmitRequest} className="space-y-4 text-sm">
+                <p className="text-xs text-muted-foreground">
+                  Changes to official institutional records require verification by the Academic Registry or Human Resources.
+                </p>
+                <div>
+                  <label className="block text-xs font-semibold mb-1">Updated Phone Number</label>
+                  <input
+                    type="text"
+                    required
+                    value={newPhone}
+                    onChange={(e) => setNewPhone(e.target.value)}
+                    className="w-full bg-background border border-border rounded-lg p-2.5 text-foreground focus:outline-none focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold mb-1">Current Residential Address</label>
+                  <input
+                    type="text"
+                    required
+                    value={newAddress}
+                    onChange={(e) => setNewAddress(e.target.value)}
+                    className="w-full bg-background border border-border rounded-lg p-2.5 text-foreground focus:outline-none focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold mb-1">Reason for Change / Notes</label>
+                  <textarea
+                    rows={2}
+                    placeholder="e.g. Moved to a new apartment or changed mobile carrier..."
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    className="w-full bg-background border border-border rounded-lg p-2.5 text-foreground focus:outline-none focus:border-primary"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button type="button" variant="ghost" onClick={() => setShowModal(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" variant="default" className="flex items-center gap-1.5">
+                    <Send className="w-4 h-4" /> Submit Request
+                  </Button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 }

@@ -35,6 +35,8 @@ import ProfilePage from "@/pages/app/ProfilePage";
 import CertificatesPage from "@/pages/app/CertificatesPage";
 import OdelCoursesPage from "@/pages/app/OdelCoursesPage";
 import LearningPlayerPage from "@/pages/app/LearningPlayerPage";
+import { DigitalLibraryPage } from "@/pages/app/DigitalLibraryPage";
+import { CommunicationPage } from "@/pages/app/CommunicationPage";
 
 import PublicVerifyPage from "@/pages/PublicVerifyPage";
 import AdmissionsPortalPage from "@/pages/AdmissionsPortalPage";
@@ -107,6 +109,24 @@ export default function AppRoutes() {
           element={
             <RoleProtectedRoute allowed={["student", "teacher", "admin"]}>
               <LearningPlayerPage />
+            </RoleProtectedRoute>
+          }
+        />
+
+        <Route
+          path="library"
+          element={
+            <RoleProtectedRoute allowed={["student", "teacher", "admin"]}>
+              <DigitalLibraryPage />
+            </RoleProtectedRoute>
+          }
+        />
+
+        <Route
+          path="communication"
+          element={
+            <RoleProtectedRoute allowed={["student", "teacher", "accountant", "admin"]}>
+              <CommunicationPage />
             </RoleProtectedRoute>
           }
         />

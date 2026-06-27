@@ -18,6 +18,8 @@ import {
   ScrollText,
   TrendingUp,
   Award,
+  MessageSquare,
+  Library,
 } from "lucide-react";
 import type { Role } from "@/types";
 
@@ -38,6 +40,8 @@ export const NAV: Record<Role, NavGroup[]> = {
       items: [
         { to: "/app/dashboard", label: "Dashboard",      icon: LayoutDashboard },
         { to: "/app/player",    label: "E-Learning LMS", icon: BookCopy },
+        { to: "/app/library",   label: "Digital Library", icon: Library },
+        { to: "/app/communication", label: "Communication", icon: MessageSquare },
         { to: "/app/levels",    label: "My Progress",    icon: TrendingUp },
         { to: "/app/attendance", label: "My Attendance",  icon: CalendarCheck2 },
         { to: "/app/results",   label: "Results",        icon: FileBarChart2 },
@@ -62,6 +66,8 @@ export const NAV: Record<Role, NavGroup[]> = {
       items: [
         { to: "/app/dashboard",  label: "Dashboard",        icon: LayoutDashboard },
         { to: "/app/odel-courses", label: "ODEL Courses",    icon: BookCopy },
+        { to: "/app/library",    label: "Digital Library",  icon: Library },
+        { to: "/app/communication", label: "Communication", icon: MessageSquare },
         { to: "/app/students",   label: "Students",          icon: Users },
         { to: "/app/levels",     label: "Language Levels",   icon: TrendingUp },
         { to: "/app/marks",      label: "Marks Entry",       icon: ClipboardEdit },
@@ -86,6 +92,7 @@ export const NAV: Record<Role, NavGroup[]> = {
       label: "Finance",
       items: [
         { to: "/app/dashboard",       label: "Dashboard",       icon: LayoutDashboard },
+        { to: "/app/communication",   label: "Communication",   icon: MessageSquare },
         { to: "/app/payments",        label: "Payments",        icon: CreditCard },
         { to: "/app/allocations",     label: "Allocations",     icon: Layers3 },
         { to: "/app/receipts",        label: "Receipts",        icon: ReceiptText },
@@ -102,6 +109,7 @@ export const NAV: Record<Role, NavGroup[]> = {
       label: "Administration",
       items: [
         { to: "/app/dashboard", label: "Dashboard",       icon: LayoutDashboard },
+        { to: "/app/communication", label: "Communication Hub", icon: MessageSquare },
         { to: "/app/users",     label: "User Management", icon: Users },
         { to: "/app/roles",     label: "Roles",           icon: ShieldCheck },
       ],
@@ -110,6 +118,7 @@ export const NAV: Record<Role, NavGroup[]> = {
       label: "Academic",
       items: [
         { to: "/app/odel-courses",  label: "ODEL Courses",     icon: BookCopy },
+        { to: "/app/library",       label: "Digital Library",  icon: Library },
         { to: "/app/levels",        label: "Language Levels",  icon: TrendingUp },
         { to: "/app/academic",      label: "Academic Setup",   icon: BookCopy },
         { to: "/app/fee-structure", label: "Fee Structure",    icon: Wallet },

@@ -1,0 +1,74 @@
+from django.db import models
+from django.conf import settings
+
+class Conversation(models.Model):
+    participants = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='conversations')
+    subject = models.CharField(max_length=255, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.subject or f"Conversation #{self.id}"
+
+class PrivateMessage(models.Model):
+    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name='messages')
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='sent_messages')
+    content = models.TextField()
+    attachment = models.FileField(upload_to='communication/attachments/', null=True, blank=True)
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"Msg from {self.sender.username} at {self.created_at.strftime('%Y-%m-%d %H:%M')}"
+
+class Announcement(models.Model):
+    class TargetGroup(models.TextChoices):
+        ALL = "ALL", "All Users"
+        STUDENTS = "STUDENTS", "Students Only"
+        TEACHERS = "TEACHERS", "Teachers Only"
+        STAFF = "STAFF", "Staff & Admin"
+
+    title = models.CharField(max_length=255)
+    content = models.TextField()
+    target_group = models.CharField(max_length=20, choices=TargetGroup.choices, default=TargetGroup.ALL)
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='announcements')
+    is_pinned = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-is_pinned', '-created_at']
+
+    def __str__(self):
+        return f"[{self.target_group}] {self.title}"
+
+class BroadcastMessage(models.Model):
+    class Channel(models.TextChoices):
+        EMAIL = "EMAIL", "Email Dispatch"
+        SMS = "SMS", "SMS Dispatch"
+        WHATSAPP = "WHATSAPP", "WhatsApp Dispatch"
+        PUSH = "PUSH", "Push Notification"
+
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    channel = models.CharField(max_length=20, choices=Channel.choices, default=Channel.EMAIL)
+    recipient_count = models.PositiveIntegerField(default=0)
+    sent_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='sent_broadcasts')
+    sent_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-sent_at']
+
+    def __str__(self):
+        return f"Broadcast ({self.channel}): {self.title}"
+
+class PushNotificationToken(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='push_tokens')
+    token = models.CharField(max_length=255, unique=True)
+    device_type = models.CharField(max_length=50, default="Web/PWA")
+    registered_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.device_type}"

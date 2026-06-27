@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "notifications",
     "core",
     "odel",
+    "library",
 ]
 
 MIDDLEWARE = [

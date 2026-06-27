@@ -1,5 +1,6 @@
 from django.db import transaction
 from django.utils import timezone
+from decimal import Decimal
 from finance.models import StudentLedger, Payment, FeeStructure
 
 class LedgerService:
@@ -7,6 +8,14 @@ class LedgerService:
     @transaction.atomic
     def record_payment(payment: Payment):
         """Record a payment in the ledger"""
+        # Check if already recorded to avoid duplicate ledger entries on save
+        if StudentLedger.objects.filter(
+            student=payment.student,
+            transaction_type=StudentLedger.TransactionTypes.PAYMENT,
+            reference_id=payment.receipt_number
+        ).exists():
+            return
+
         # Create ledger entry for the payment
         StudentLedger.objects.create(
             student=payment.student,
@@ -18,10 +27,12 @@ class LedgerService:
 
         # Update student balances
         student = payment.student
+        outstanding_dec = Decimal(str(student.outstanding_balance))
+        payment_amount_dec = Decimal(str(payment.amount))
         
         # Calculate overpayment if applicable
-        if student.outstanding_balance < payment.amount:
-            credit_amount = payment.amount - student.outstanding_balance
+        if outstanding_dec < payment_amount_dec:
+            credit_amount = payment_amount_dec - outstanding_dec
             # Record credit entry
             if credit_amount > 0:
                 StudentLedger.objects.create(

@@ -39,6 +39,7 @@ urlpatterns = [
     path("api/", include("notifications.urls")),
     path("api/core/", include("core.urls")),
     path("api/odel/", include("odel.urls")),
+    path("api/library/", include("library.urls")),
 ]
 
 if settings.DEBUG:

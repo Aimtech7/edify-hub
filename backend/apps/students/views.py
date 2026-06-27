@@ -211,31 +211,84 @@ class AdmissionApplicationViewSet(viewsets.ModelViewSet):
             )
 
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
-    def approve(self, request, pk=None):
+    def update_status(self, request, pk=None):
         app = self.get_object()
-        
-        if app.status == AdmissionApplication.Status.APPROVED:
-            return Response({"detail": "Already approved."}, status=status.HTTP_400_BAD_REQUEST)
-            
-        if not app.documents_verified:
-            return Response({"detail": "Documents must be verified before approval."}, status=status.HTTP_400_BAD_REQUEST)
-            
-        # Approval converts application to student
-        serializer = StudentSerializer(data={
+        new_status = request.data.get('status')
+        notes = request.data.get('notes', '')
+
+        if not new_status or new_status not in [s[0] for s in AdmissionApplication.Status.choices]:
+            return Response({"detail": "Invalid status provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+        old_status = app.status
+        app.status = new_status
+        if notes:
+            app.internal_notes = f"{app.internal_notes}\n[{request.user.username} - {new_status}]: {notes}".strip()
+        if new_status == AdmissionApplication.Status.APPROVED:
+            app.documents_verified = True
+        app.save()
+
+        from students.models import AdmissionsActivityLog
+        AdmissionsActivityLog.objects.create(
+            application=app,
+            actor=request.user,
+            action=f"Changed status to {new_status}. {notes}".strip(),
+            old_status=old_status,
+            new_status=new_status
+        )
+
+        from audits.models import log_action
+        log_action(request.user, f"Updated admission #{app.id} status to {new_status}", request)
+        return Response({"status": "updated", "new_status": new_status})
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    def convert_to_student(self, request, pk=None):
+        app = self.get_object()
+        if app.status == AdmissionApplication.Status.CONVERTED_TO_STUDENT and app.student_profile:
+            return Response({"detail": "Application already converted to student."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if app.status != AdmissionApplication.Status.APPROVED:
+            return Response({"detail": "Application must be APPROVED before converting to student."}, status=status.HTTP_400_BAD_REQUEST)
+
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        username = app.email.split('@')[0].lower() + str(app.id)
+        user, created = User.objects.get_or_create(email=app.email, defaults={
+            'username': username,
             'first_name': app.first_name,
             'last_name': app.last_name,
-            'email': app.email,
-            'phone': app.phone,
-            'current_level': app.recommended_level.id if app.recommended_level else None
-        }, context={'application': app})
-        
-        if serializer.is_valid():
-            serializer.save()
-            from audits.models import log_action
-            log_action(self.request.user, f"Approved admission for {app.first_name} {app.last_name}", request)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-            
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            'role': 'STUDENT',
+            'is_active': True
+        })
+        if created:
+            user.set_password('Horizon2026!')
+            user.save()
+
+        student = Student.objects.create(
+            user=user,
+            first_name=app.first_name,
+            last_name=app.last_name,
+            email=app.email,
+            phone=app.phone,
+            current_level=app.recommended_level,
+            status=Student.Status.ACTIVE
+        )
+
+        app.status = AdmissionApplication.Status.CONVERTED_TO_STUDENT
+        app.student_profile = student
+        app.save()
+
+        from students.models import AdmissionsActivityLog
+        AdmissionsActivityLog.objects.create(
+            application=app,
+            actor=request.user,
+            action=f"Converted to Student Adm #{student.admission_number}",
+            old_status=AdmissionApplication.Status.APPROVED,
+            new_status=AdmissionApplication.Status.CONVERTED_TO_STUDENT
+        )
+
+        from audits.models import log_action
+        log_action(request.user, f"Converted admission #{app.id} to Student ({student.admission_number})", request)
+        return Response({"status": "converted", "student_id": student.id, "admission_number": student.admission_number}, status=status.HTTP_201_CREATED)
 
     @action(detail=False, methods=['get'])
     def analytics(self, request):

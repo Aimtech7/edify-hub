@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { AuthShell } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useAuth } from "@/contexts/auth-context";
@@ -54,7 +55,7 @@ export default function LoginStaffPage() {
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="pw">Password</Label>
-          <Input id="pw" type="password" value={pw} onChange={(e) => setPw(e.target.value)} />
+          <PasswordInput id="pw" value={pw} onChange={(e) => setPw(e.target.value)} />
         </div>
         <div className="flex items-center justify-between text-sm">
           <Link to="/forgot-password" className="text-primary hover:underline">Forgot password?</Link>

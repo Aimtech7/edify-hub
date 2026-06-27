@@ -97,3 +97,49 @@ class ResetPasswordView(APIView):
             except User.DoesNotExist:
                 return Response({"username": ["User not found."]}, status=status.HTTP_404_NOT_FOUND)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class ParentSignupView(APIView):
+    permission_classes = (permissions.AllowAny,)
+
+    def post(self, request):
+        data = request.data
+        username = data.get('username')
+        email = data.get('email')
+        password = data.get('password')
+        first_name = data.get('first_name', '')
+        last_name = data.get('last_name', '')
+        phone = data.get('phone', '')
+        student_admission = data.get('student_admission', '')
+
+        if not username or not password or not email:
+            return Response({"detail": "Username, email, and password are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if User.objects.filter(username=username).exists():
+            return Response({"detail": "Username is already taken."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if User.objects.filter(email=email).exists():
+            return Response({"detail": "Email is already registered."}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = User.objects.create(
+            username=username,
+            email=email,
+            first_name=first_name,
+            last_name=last_name,
+            role=User.Role.PARENT
+        )
+        user.set_password(password)
+        user.save()
+
+        from students.models import Student, ParentGuardian
+        profile = ParentGuardian.objects.create(user=user, phone_number=phone, relationship="Parent")
+
+        if student_admission:
+            student = Student.objects.filter(admission_number=student_admission.strip()).first()
+            if student:
+                profile.students.add(student)
+
+        from audits.models import log_action
+        log_action(user, f"Parent account registered: {user.username}", request)
+
+        return Response({"message": "Parent account created successfully. You can now log in."}, status=status.HTTP_201_CREATED)
+

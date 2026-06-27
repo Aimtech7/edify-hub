@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { AuthShell } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/auth-context";
 import { ShieldCheck } from "lucide-react";
@@ -11,8 +12,8 @@ import { toast } from "sonner";
 export default function LoginAdminPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [u, setU] = useState("admin");
-  const [pw, setPw] = useState("admin");
+  const [u, setU] = useState("austinemakwaka254@gmail.com");
+  const [pw, setPw] = useState("aimtech");
 
   return (
     <AuthShell
@@ -40,12 +41,12 @@ export default function LoginAdminPage() {
         className="space-y-4"
       >
         <div className="space-y-1.5">
-          <Label htmlFor="u">Admin Username</Label>
+          <Label htmlFor="u">Admin Username or Email</Label>
           <Input id="u" value={u} onChange={(e) => setU(e.target.value)} />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="pw">Password</Label>
-          <Input id="pw" type="password" value={pw} onChange={(e) => setPw(e.target.value)} />
+          <PasswordInput id="pw" value={pw} onChange={(e) => setPw(e.target.value)} />
         </div>
         <Button type="submit" className="w-full gradient-primary text-primary-foreground">Continue</Button>
       </form>

@@ -1,14 +1,10 @@
 from django.contrib import admin
+from .models import (
+    FeeStructure, Payment, Allocation, Receipt,
+    MpesaTransaction, StudentLedger, PaymentPlan, PaymentPlanInstallment
+)
 
-# Register your models here.
-
-from .models import PaymentPlan, PaymentPlanInstallment
-
-class PaymentPlanInstallmentInline(admin.TabularInline):
-    model = PaymentPlanInstallment
-    extra = 1
-
-@admin.register(PaymentPlan)
-class PaymentPlanAdmin(admin.ModelAdmin):
-    list_display = ('student', 'fee_structure', 'total_fee', 'amount_paid', 'status')
-    inlines = [PaymentPlanInstallmentInline]
+for model in [FeeStructure, Payment, Allocation, Receipt, MpesaTransaction, StudentLedger, PaymentPlan, PaymentPlanInstallment]:
+    @admin.register(model)
+    class GenericFinAdmin(admin.ModelAdmin):
+        list_display = [f.name for f in model._meta.fields[:6]]

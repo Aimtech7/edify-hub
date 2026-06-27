@@ -54,6 +54,8 @@ INSTALLED_APPS = [
     "library",
     "communication",
     "hr",
+    "ai_assistant",
+    "dms",
 ]
 
 MIDDLEWARE = [

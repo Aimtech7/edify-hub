@@ -1,14 +1,17 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { ProtectedRoute, RoleProtectedRoute } from "./guards";
 import { DashboardLayout } from "@/layouts/dashboard-layout";
+import AIChatWidget from "@/components/AIChatWidget";
 
 import LandingPage from "@/pages/LandingPage";
 import NotFoundPage from "@/pages/NotFoundPage";
 import UnauthorizedPage from "@/pages/UnauthorizedPage";
 import SessionTimeoutPage from "@/pages/SessionTimeoutPage";
+import { Error500, ErrorOffline } from "@/components/error-pages";
 
 import LoginStudentPage from "@/pages/auth/LoginStudentPage";
 import LoginParentPage from "@/pages/auth/LoginParentPage";
+import SignupParentPage from "@/pages/auth/SignupParentPage";
 import LoginStaffPage from "@/pages/auth/LoginStaffPage";
 import LoginAdminPage from "@/pages/auth/LoginAdminPage";
 import ForgotPasswordPage from "@/pages/auth/ForgotPasswordPage";
@@ -39,25 +42,33 @@ import LearningPlayerPage from "@/pages/app/LearningPlayerPage";
 import { DigitalLibraryPage } from "@/pages/app/DigitalLibraryPage";
 import { CommunicationPage } from "@/pages/app/CommunicationPage";
 import HrManagementPage from "@/pages/app/HrManagementPage";
+import AdmissionsQueuePage from "@/pages/app/AdmissionsQueuePage";
+import LessonResourcesPage from "@/pages/dms/LessonResourcesPage";
+import KnowledgeBasePage from "@/pages/dms/KnowledgeBasePage";
+import StorageDashboardPage from "@/pages/dms/StorageDashboardPage";
 
 import PublicVerifyPage from "@/pages/PublicVerifyPage";
 import AdmissionsPortalPage from "@/pages/AdmissionsPortalPage";
 
 export default function AppRoutes() {
   return (
-    <Routes>
+    <>
+      <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/verify/:certNo?" element={<PublicVerifyPage />} />
       <Route path="/admissions" element={<AdmissionsPortalPage />} />
 
       <Route path="/login/student" element={<LoginStudentPage />} />
       <Route path="/login/parent" element={<LoginParentPage />} />
+      <Route path="/signup/parent" element={<SignupParentPage />} />
       <Route path="/login/staff" element={<LoginStaffPage />} />
       <Route path="/login/admin" element={<LoginAdminPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/change-password" element={<ChangePasswordPage />} />
       <Route path="/session-timeout" element={<SessionTimeoutPage />} />
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
+      <Route path="/error-500" element={<Error500 onRetry={() => window.location.reload()} />} />
+      <Route path="/offline" element={<ErrorOffline />} />
 
       <Route
         path="/app"
@@ -255,9 +266,43 @@ export default function AppRoutes() {
             </RoleProtectedRoute>
           }
         />
+        <Route
+          path="admissions-queue"
+          element={
+            <RoleProtectedRoute allowed={["admin", "teacher"]}>
+              <AdmissionsQueuePage />
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
+          path="lesson-resources"
+          element={
+            <RoleProtectedRoute allowed={["admin", "teacher", "student"]}>
+              <LessonResourcesPage />
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
+          path="knowledge-base"
+          element={
+            <RoleProtectedRoute allowed={["admin", "teacher", "student", "parent"]}>
+              <KnowledgeBasePage />
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
+          path="storage-dashboard"
+          element={
+            <RoleProtectedRoute allowed={["admin"]}>
+              <StorageDashboardPage />
+            </RoleProtectedRoute>
+          }
+        />
       </Route>
 
       <Route path="*" element={<NotFoundPage />} />
-    </Routes>
+      </Routes>
+      <AIChatWidget />
+    </>
   );
 }

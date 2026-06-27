@@ -42,6 +42,8 @@ urlpatterns = [
     path("api/library/", include("library.urls")),
     path("api/communication/", include("communication.urls")),
     path("api/hr/", include("hr.urls")),
+    path("api/ai/", include("ai_assistant.urls")),
+    path("api/dms/", include("dms.urls")),
 ]
 
 if settings.DEBUG:

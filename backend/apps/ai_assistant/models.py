@@ -1,0 +1,84 @@
+from django.db import models
+from django.conf import settings
+import json
+
+class AISetting(models.Model):
+    class Provider(models.TextChoices):
+        HUGGINGFACE = "HUGGINGFACE", "Hugging Face Inference API"
+        OPENAI = "OPENAI", "OpenAI API"
+        GEMINI = "GEMINI", "Google Gemini"
+        OLLAMA = "OLLAMA", "Local Ollama"
+
+    provider = models.CharField(max_length=50, choices=Provider.choices, default=Provider.HUGGINGFACE)
+    huggingface_api_key = models.CharField(max_length=255, blank=True, help_text="API Key or Token for Hugging Face Inference API")
+    openai_api_key = models.CharField(max_length=255, blank=True)
+    gemini_api_key = models.CharField(max_length=255, blank=True)
+    
+    model_name = models.CharField(max_length=150, default="mistralai/Mistral-7B-Instruct-v0.3", help_text="Primary LLM Model Name")
+    temperature = models.FloatField(default=0.7)
+    max_tokens = models.IntegerField(default=768)
+    system_prompt = models.TextField(
+        default="You are Antigravity AI, the official intelligent RAG chatbot for Horizon Deutsch Training Institute ERP. Answer strictly based on the retrieved context and institutional knowledge provided. If unsure, advise contacting support."
+    )
+    embedding_model = models.CharField(max_length=150, default="sentence-transformers/all-MiniLM-L6-v2")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "AI System Configuration"
+        verbose_name_plural = "AI System Configuration"
+
+    @classmethod
+    def get_settings(cls):
+        obj, _ = cls.objects.get_or_create(id=1)
+        return obj
+
+    def __str__(self):
+        return f"AI Settings ({self.provider} - {self.model_name})"
+
+
+class KnowledgeDocument(models.Model):
+    class Category(models.TextChoices):
+        FAQ = "FAQ", "Frequently Asked Questions"
+        POLICY = "POLICY", "Institution Policy & Rules"
+        COURSE_NOTE = "COURSE_NOTE", "Course / Syllabus Note"
+        ANNOUNCEMENT = "ANNOUNCEMENT", "Public Announcement"
+        GENERAL = "GENERAL", "General Knowledge"
+
+    title = models.CharField(max_length=255)
+    category = models.CharField(max_length=50, choices=Category.choices, default=Category.GENERAL)
+    content = models.TextField(help_text="Full text content indexed for semantic search")
+    file = models.FileField(upload_to="knowledge_base/", null=True, blank=True, help_text="Optional source PDF/Word document")
+    embedding_vector = models.JSONField(default=list, blank=True, help_text="Stored float vector array for cosine similarity")
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return f"[{self.category}] {self.title}"
+
+
+class AIRequestLog(models.Model):
+    class Feedback(models.TextChoices):
+        HELPFUL = "HELPFUL", "👍 Helpful"
+        NOT_HELPFUL = "NOT_HELPFUL", "👎 Not Helpful"
+        NONE = "NONE", "None"
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    user_role = models.CharField(max_length=50, blank=True)
+    question = models.TextField()
+    retrieved_context = models.TextField(blank=True)
+    model_used = models.CharField(max_length=150)
+    response_text = models.TextField()
+    response_time_ms = models.IntegerField(default=0)
+    feedback = models.CharField(max_length=20, choices=Feedback.choices, default=Feedback.NONE)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        actor = self.user.username if self.user else "Anonymous"
+        return f"{actor} ({self.user_role}): {self.question[:40]}... ({self.response_time_ms}ms)"

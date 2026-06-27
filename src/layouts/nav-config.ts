@@ -43,6 +43,8 @@ export const NAV: Record<Role, NavGroup[]> = {
         { to: "/app/dashboard", label: "Dashboard",      icon: LayoutDashboard },
         { to: "/app/player",    label: "E-Learning LMS", icon: BookCopy },
         { to: "/app/library",   label: "Digital Library", icon: Library },
+        { to: "/app/lesson-resources", label: "Lesson Resources", icon: BookOpen },
+        { to: "/app/knowledge-base", label: "Knowledge Base", icon: ScrollText },
         { to: "/app/communication", label: "Communication", icon: MessageSquare },
         { to: "/app/levels",    label: "My Progress",    icon: TrendingUp },
         { to: "/app/attendance", label: "My Attendance",  icon: CalendarCheck2 },
@@ -67,7 +69,10 @@ export const NAV: Record<Role, NavGroup[]> = {
       label: "Teaching",
       items: [
         { to: "/app/dashboard",  label: "Dashboard",        icon: LayoutDashboard },
+        { to: "/app/admissions-queue", label: "Admissions Bridge", icon: Users },
         { to: "/app/odel-courses", label: "ODEL Courses",    icon: BookCopy },
+        { to: "/app/lesson-resources", label: "Lesson Resources", icon: BookOpen },
+        { to: "/app/knowledge-base", label: "Knowledge Base", icon: ScrollText },
         { to: "/app/library",    label: "Digital Library",  icon: Library },
         { to: "/app/communication", label: "Communication", icon: MessageSquare },
         { to: "/app/students",   label: "Students",          icon: Users },
@@ -111,9 +116,18 @@ export const NAV: Record<Role, NavGroup[]> = {
       label: "Administration",
       items: [
         { to: "/app/dashboard", label: "Dashboard",       icon: LayoutDashboard },
+        { to: "/app/admissions-queue", label: "Admissions Queue", icon: Users },
         { to: "/app/communication", label: "Communication Hub", icon: MessageSquare },
         { to: "/app/users",     label: "User Management", icon: Users },
         { to: "/app/roles",     label: "Roles",           icon: ShieldCheck },
+      ],
+    },
+    {
+      label: "DMS & AI Knowledge",
+      items: [
+        { to: "/app/storage-dashboard", label: "Storage Telemetry", icon: Layers3 },
+        { to: "/app/lesson-resources", label: "Lesson Resources", icon: BookOpen },
+        { to: "/app/knowledge-base", label: "Knowledge Base", icon: ScrollText },
       ],
     },
     {
@@ -141,6 +155,7 @@ export const NAV: Record<Role, NavGroup[]> = {
       label: "Parent Portal",
       items: [
         { to: "/app/dashboard", label: "Portal Overview", icon: LayoutDashboard },
+        { to: "/app/knowledge-base", label: "Knowledge Base & FAQs", icon: ScrollText },
         { to: "/app/receipts", label: "Fee Receipts", icon: ReceiptText },
         { to: "/app/communication", label: "Communication", icon: MessageSquare },
       ],

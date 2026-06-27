@@ -154,9 +154,16 @@ class Student(SoftDeleteModel):
         return f"{self.admission_number}: {self.first_name} {self.last_name}"
 
 class PlacementTest(models.Model):
-    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='placement_tests')
-    score = models.IntegerField()
-    recommended_level = models.ForeignKey('academics.Level', on_delete=models.PROTECT)
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='placement_tests', null=True, blank=True)
+    application = models.ForeignKey('AdmissionApplication', on_delete=models.SET_NULL, null=True, blank=True, related_name='placement_tests')
+    listening = models.IntegerField(default=0)
+    reading = models.IntegerField(default=0)
+    writing = models.IntegerField(default=0)
+    speaking = models.IntegerField(default=0)
+    grammar = models.IntegerField(default=0)
+    vocabulary = models.IntegerField(default=0)
+    score = models.IntegerField(default=0)
+    recommended_level = models.ForeignKey('academics.Level', on_delete=models.PROTECT, null=True, blank=True)
     examiner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -168,16 +175,21 @@ class PlacementTest(models.Model):
     remarks = models.TextField(blank=True)
 
     def __str__(self):
-        return f"Test for {self.student.admission_number} - Score: {self.score}"
+        target = self.student.admission_number if self.student else (f"App #{self.application.id}" if self.application else "Unknown")
+        return f"Test for {target} - Score: {self.score}"
 
 class AdmissionApplication(models.Model):
     class Status(models.TextChoices):
+        NEW = "New", "New"
         ADMISSIONS_QUEUE = "Admissions Queue", "Admissions Queue"
-        DOCUMENT_VERIFICATION = "Document Verification", "Document Verification"
-        PENDING_TEST = "Pending Test", "Pending Test"
-        PENDING_APPROVAL = "Pending Approval", "Pending Approval"
+        UNDER_REVIEW = "Under Review", "Under Review"
+        DOCUMENTS_PENDING = "Documents Pending", "Documents Pending"
+        PLACEMENT_TEST_PENDING = "Placement Test Pending", "Placement Test Pending"
+        INTERVIEW_SCHEDULED = "Interview Scheduled", "Interview Scheduled"
         APPROVED = "Approved", "Approved"
         REJECTED = "Rejected", "Rejected"
+        DEFERRED = "Deferred", "Deferred"
+        CONVERTED_TO_STUDENT = "Converted to Student", "Converted to Student"
 
     # Step 1: Personal Info
     first_name = models.CharField(max_length=50)
@@ -222,19 +234,38 @@ class AdmissionApplication(models.Model):
     academic_certificates = models.FileField(upload_to='admissions/certificates/', blank=True, null=True)
     additional_documents = models.FileField(upload_to='admissions/misc/', blank=True, null=True)
 
-    # Workflow tracking
+    # Workflow tracking & Officer Management
     documents_verified = models.BooleanField(default=False)
     placement_test_score = models.IntegerField(null=True, blank=True)
     recommended_level = models.ForeignKey('academics.Level', on_delete=models.SET_NULL, null=True, blank=True)
     
-    status = models.CharField(max_length=50, choices=Status.choices, default=Status.ADMISSIONS_QUEUE)
+    assigned_officer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_applications')
+    priority = models.CharField(max_length=20, choices=[('Low', 'Low'), ('Normal', 'Normal'), ('High', 'High'), ('Urgent', 'Urgent')], default='Normal')
+    internal_notes = models.TextField(blank=True)
+    
+    status = models.CharField(max_length=50, choices=Status.choices, default=Status.NEW)
     student_profile = models.OneToOneField('Student', on_delete=models.SET_NULL, null=True, blank=True, related_name='application')
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name} - {self.status}"
+        return f"App #{self.id}: {self.first_name} {self.last_name} ({self.status})"
+
+class AdmissionsActivityLog(models.Model):
+    application = models.ForeignKey(AdmissionApplication, on_delete=models.CASCADE, related_name='activity_logs')
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    action = models.CharField(max_length=255)
+    old_status = models.CharField(max_length=50, blank=True)
+    new_status = models.CharField(max_length=50, blank=True)
+    notes = models.TextField(blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f"Log #{self.id} for App #{self.application.id}"
 
 class ParentGuardian(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='parent_profile')

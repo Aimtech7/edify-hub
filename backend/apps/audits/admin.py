@@ -1,3 +1,6 @@
 from django.contrib import admin
+from .models import AuditLog
 
-# Register your models here.
+@admin.register(AuditLog)
+class AuditLogAdmin(admin.ModelAdmin):
+    list_display = [f.name for f in AuditLog._meta.fields[:6]]

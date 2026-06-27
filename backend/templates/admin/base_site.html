@@ -1,0 +1,205 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{{ title }} | Horizon Deutsch Training Institute ERP{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        colors: {
+          german: {
+            black: '#0F172A',
+            red: '#DC2626',
+            gold: '#EAB308',
+            dark: '#020617',
+            card: '#1E293B'
+          }
+        }
+      }
+    }
+  }
+</script>
+<style>
+  /* Override django admin defaults to blend with modern ERP styling */
+  #header {
+    background: #0F172A !important;
+    color: #ffffff !important;
+    border-bottom: 3px solid #DC2626;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+  }
+  #branding h1 {
+    color: #ffffff !important;
+    font-weight: 800;
+    font-size: 1.5rem;
+    letter-spacing: -0.025em;
+  }
+  #branding h1 span {
+    color: #EAB308;
+  }
+  #user-tools {
+    color: #e2e8f0 !important;
+  }
+  #user-tools a {
+    color: #EAB308 !important;
+    font-weight: 600;
+  }
+  #user-tools a:hover {
+    color: #ffffff !important;
+  }
+  .module h2, .module caption, .inline-group h2 {
+    background: #0F172A !important;
+    color: #ffffff !important;
+    border-left: 4px solid #DC2626;
+  }
+  a.section:link, a.section:visited {
+    color: #EAB308 !important;
+  }
+  .button, input[type=submit], input[type=button], .submit-row input, a.button {
+    background: #DC2626 !important;
+    color: white !important;
+    border-radius: 0.5rem !important;
+    font-weight: bold !important;
+    transition: all 0.2s;
+  }
+  .button:hover, input[type=submit]:hover, input[type=button]:hover, .submit-row input:hover {
+    background: #b91c1c !important;
+    transform: translateY(-1px);
+  }
+  /* Dark mode toggle support */
+  body.dark-theme {
+    background-color: #020617 !important;
+    color: #f8fafc !important;
+  }
+  body.dark-theme #content {
+    background-color: #020617 !important;
+    color: #f8fafc !important;
+  }
+  body.dark-theme .module {
+    background: #1e293b !important;
+    border: 1px solid #334155;
+  }
+</style>
+{% endblock %}
+
+{% block branding %}
+<div class="flex items-center justify-between w-full pr-4 py-1">
+  <div class="flex items-center gap-3">
+    <div class="h-10 w-10 bg-white rounded-lg p-1 flex items-center justify-center shadow">
+      <span class="text-xl font-extrabold text-[#0F172A]">H</span>
+    </div>
+    <div>
+      <h1 id="site-name"><a href="{% url 'admin:index' %}">HORIZON <span>ERP</span></a></h1>
+      <div class="text-[11px] text-[#EAB308] uppercase tracking-wider font-bold">Deutsch Training Institute · Super Admin</div>
+    </div>
+  </div>
+  <div class="flex items-center gap-4 text-sm">
+    <a href="http://localhost:5173" target="_blank" class="bg-[#DC2626] hover:bg-[#b91c1c] text-white px-3 py-1.5 rounded-md font-bold text-xs flex items-center gap-1 shadow">
+      <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Frontend App
+    </a>
+  </div>
+</div>
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="bg-[#1E293B] text-slate-200 px-4 py-2 text-xs font-semibold border-b border-slate-700 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+  <div class="flex items-center flex-wrap gap-4">
+    <a href="{% url 'admin:index' %}" class="hover:text-[#EAB308] flex items-center gap-1"><i class="fa-solid fa-gauge"></i> Dashboard</a>
+    
+    {/* Admissions Dropdown */}
+    <div class="relative group">
+      <button class="hover:text-[#EAB308] flex items-center gap-1 font-bold text-[#EAB308] focus:outline-none">
+        <i class="fa-solid fa-user-plus"></i> Admissions <i class="fa-solid fa-chevron-down text-[10px]"></i>
+      </button>
+      <div class="absolute left-0 mt-1 w-52 bg-[#0F172A] border border-slate-700 rounded-lg shadow-xl hidden group-hover:block z-50 py-1">
+        <a href="{% url 'admin:students_admissionapplication_changelist' %}?status__exact=New" class="block px-3 py-1.5 hover:bg-slate-800 hover:text-[#EAB308]">New Admissions</a>
+        <a href="{% url 'admin:students_admissionapplication_changelist' %}?status__exact=Under+Review" class="block px-3 py-1.5 hover:bg-slate-800 hover:text-[#EAB308]">Under Review</a>
+        <a href="{% url 'admin:students_admissionapplication_changelist' %}?status__exact=Placement+Test+Pending" class="block px-3 py-1.5 hover:bg-slate-800 hover:text-[#EAB308]">Placement Tests</a>
+        <a href="{% url 'admin:students_admissionapplication_changelist' %}?status__exact=Approved" class="block px-3 py-1.5 hover:bg-slate-800 hover:text-[#EAB308]">Approved</a>
+        <a href="{% url 'admin:students_admissionapplication_changelist' %}?status__exact=Rejected" class="block px-3 py-1.5 hover:bg-slate-800 hover:text-[#EAB308]">Rejected</a>
+        <a href="{% url 'admin:students_admissionapplication_changelist' %}?status__exact=Deferred" class="block px-3 py-1.5 hover:bg-slate-800 hover:text-[#EAB308]">Deferred</a>
+        <a href="{% url 'admin:students_admissionapplication_changelist' %}?status__exact=Converted+to+Student" class="block px-3 py-1.5 hover:bg-slate-800 text-emerald-400">Converted to Students</a>
+      </div>
+    </div>
+
+    <a href="{% url 'admin:students_student_changelist' %}" class="hover:text-[#EAB308]"><i class="fa-solid fa-user-graduate"></i> Students</a>
+    <a href="{% url 'admin:hr_employeerecord_changelist' %}" class="hover:text-[#EAB308]"><i class="fa-solid fa-chalkboard-user"></i> Teachers & HR</a>
+    <a href="{% url 'admin:academics_program_changelist' %}" class="hover:text-[#EAB308]"><i class="fa-solid fa-book"></i> Academics</a>
+    <a href="{% url 'admin:finance_payment_changelist' %}" class="hover:text-[#EAB308]"><i class="fa-solid fa-coins"></i> Finance</a>
+    <a href="{% url 'admin:attendance_attendance_changelist' %}" class="hover:text-[#EAB308]"><i class="fa-solid fa-calendar-check"></i> Attendance</a>
+    <a href="{% url 'admin:results_result_changelist' %}" class="hover:text-[#EAB308]"><i class="fa-solid fa-trophy"></i> Results</a>
+    <a href="{% url 'admin:certificates_certificate_changelist' %}" class="hover:text-[#EAB308]"><i class="fa-solid fa-certificate"></i> Certificates</a>
+    <a href="{% url 'admin:odel_course_changelist' %}" class="hover:text-[#EAB308]"><i class="fa-solid fa-laptop-code"></i> ODEL</a>
+    <a href="{% url 'admin:library_book_changelist' %}" class="hover:text-[#EAB308]"><i class="fa-solid fa-book-open-reader"></i> Library</a>
+    <a href="{% url 'admin:communication_announcement_changelist' %}" class="hover:text-[#EAB308]"><i class="fa-solid fa-bullhorn"></i> Communication</a>
+    <a href="{% url 'admin:core_institutionprofile_changelist' %}" class="hover:text-[#EAB308]"><i class="fa-solid fa-sliders"></i> CMS & Settings</a>
+    <a href="{% url 'admin:accounts_user_changelist' %}" class="hover:text-[#EAB308]"><i class="fa-solid fa-users-gear"></i> Users</a>
+    <a href="{% url 'admin:audits_auditlog_changelist' %}" class="hover:text-[#EAB308]"><i class="fa-solid fa-shield-halved"></i> Audit Logs</a>
+    <a href="{% url 'admin:ai_assistant_aisetting_changelist' %}" class="text-[#EAB308] font-bold hover:text-white"><i class="fa-solid fa-robot"></i> AI RAG</a>
+  </div>
+</div>
+{% if title != 'Site administration' %}
+  <div class="px-4 py-1.5 bg-slate-100 dark:bg-slate-800 text-xs text-slate-500 border-b border-slate-200 dark:border-slate-700">
+    <a href="{% url 'admin:index' %}">Home</a> &rsaquo; {{ title }}
+  </div>
+{% endif %}
+
+<!-- Admin AI Assistant Floating Widget -->
+<div id="admin-ai-widget" style="position: fixed; bottom: 24px; right: 24px; z-index: 9999; font-family: sans-serif;">
+  <button id="ai-btn" onclick="toggleAiChat()" style="background: linear-gradient(135deg, #0F172A, #DC2626); color: #EAB308; border: 2px solid #EAB308; border-radius: 50px; padding: 12px 20px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: flex; align-items: center; gap: 8px;">
+    <span style="font-size: 20px;">🤖</span> Horizon AI Admin
+  </button>
+  <div id="ai-box" style="display: none; width: 350px; background: #fff; border: 2px solid #0F172A; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.3); overflow: hidden; margin-top: 10px;">
+    <div style="background: #0F172A; color: #fff; padding: 12px; border-bottom: 2px solid #DC2626; display: flex; justify-content: space-between; align-items: center;">
+      <b style="color: #EAB308;">🤖 Horizon AI Assistant</b>
+      <span onclick="toggleAiChat()" style="cursor: pointer; font-size: 18px;">✕</span>
+    </div>
+    <div id="ai-msgs" style="padding: 12px; height: 300px; overflow-y: auto; font-size: 13px; background: #f8fafc; display: flex; flex-direction: column; gap: 10px;">
+      <div style="background: #e2e8f0; padding: 8px 12px; border-radius: 8px; align-self: flex-start;">Welcome Admin! Ask me about queue counts, student metrics, or policies.</div>
+    </div>
+    <div style="padding: 8px; border-top: 1px solid #cbd5e1; display: flex; gap: 6px;">
+      <input id="ai-input" type="text" placeholder="Ask AI..." style="flex: 1; padding: 8px; border: 1px solid #94a3b8; border-radius: 6px; font-size: 13px;" onkeypress="if(event.key==='Enter') sendAiAdminMsg()"/>
+      <button onclick="sendAiAdminMsg()" style="background: #0F172A; color: #EAB308; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer;">Send</button>
+    </div>
+  </div>
+</div>
+<script>
+function toggleAiChat() {
+  const box = document.getElementById('ai-box');
+  const btn = document.getElementById('ai-btn');
+  if (box.style.display === 'none') {
+    box.style.display = 'block';
+    btn.style.display = 'none';
+  } else {
+    box.style.display = 'none';
+    btn.style.display = 'flex';
+  }
+}
+async function sendAiAdminMsg() {
+  const inp = document.getElementById('ai-input');
+  const txt = inp.value.trim();
+  if (!txt) return;
+  const msgs = document.getElementById('ai-msgs');
+  msgs.innerHTML += `<div style="background: #0F172A; color: #fff; padding: 8px 12px; border-radius: 8px; align-self: flex-end;">${txt}</div>`;
+  inp.value = '';
+  msgs.scrollTop = msgs.scrollHeight;
+  try {
+    const res = await fetch('/api/ai/chat/', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({question: txt})
+    });
+    const data = await res.json();
+    msgs.innerHTML += `<div style="background: #fff; border: 1px solid #cbd5e1; padding: 8px 12px; border-radius: 8px; align-self: flex-start;">${data.reply || 'No response.'}</div>`;
+  } catch(e) {
+    msgs.innerHTML += `<div style="color: red; align-self: flex-start;">Error connecting to AI.</div>`;
+  }
+  msgs.scrollTop = msgs.scrollHeight;
+}
+</script>
+{% endblock %}

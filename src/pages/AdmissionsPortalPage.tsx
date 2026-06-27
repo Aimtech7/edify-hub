@@ -267,7 +267,9 @@ export default function AdmissionsPortalPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-secondary text-secondary-foreground border-b border-border shadow-md">
+      {/* Official German Flag Color Accent Bar */}
+      <div className="h-1.5 w-full bg-gradient-to-r from-[#0F172A] via-[#DC2626] to-[#EAB308]" />
+      <header className="sticky top-0 z-40 bg-[#0F172A] text-white border-b border-white/10 shadow-md">
         <div className="mx-auto max-w-5xl px-6 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
             <img
@@ -276,17 +278,16 @@ export default function AdmissionsPortalPage() {
               className="h-10 w-auto object-contain bg-white rounded p-1"
             />
             <div className="leading-tight">
-              <div className="font-display font-bold text-base tracking-wide">HORIZON DTI</div>
-              <div className="text-[11px] uppercase tracking-wider text-secondary-foreground/70">
+              <div className="font-display font-bold text-base tracking-wide text-white">HORIZON DTI</div>
+              <div className="text-[11px] uppercase tracking-wider text-[#EAB308] font-semibold">
                 Admissions Portal
               </div>
             </div>
           </Link>
           <Button
             asChild
-            variant="ghost"
             size="sm"
-            className="hover:text-accent hover:bg-white/10"
+            className="bg-[#DC2626] hover:bg-[#b91c1c] text-white font-bold border border-[#EAB308]/30"
           >
             <Link to="/login/student">Already enrolled? Sign in</Link>
           </Button>

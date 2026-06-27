@@ -32,27 +32,29 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-40 bg-secondary text-secondary-foreground border-b border-border shadow-md">
+      {/* Official German Flag Color Accent Bar */}
+      <div className="h-1.5 w-full bg-gradient-to-r from-[#0F172A] via-[#DC2626] to-[#EAB308]" />
+      <header className="sticky top-0 z-40 bg-[#0F172A] text-white border-b border-white/10 shadow-md">
         <div className="mx-auto max-w-7xl px-6 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
             <img src="/logo.png" alt="Horizon DTI Logo" className="h-10 w-auto object-contain bg-white rounded p-1" />
             <div className="leading-tight">
-              <div className="font-display font-bold text-base tracking-wide">HORIZON DTI</div>
-              <div className="text-[11px] text-muted-foreground uppercase tracking-wider">Deutsch Training Institute</div>
+              <div className="font-display font-bold text-base tracking-wide text-white">HORIZON DTI</div>
+              <div className="text-[11px] text-[#EAB308] font-semibold uppercase tracking-wider">Deutsch Training Institute</div>
             </div>
           </Link>
-          <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-secondary-foreground/80">
-            <a href="#about"         className="hover:text-accent transition-colors">About Us</a>
-            <a href="#levels"        className="hover:text-accent transition-colors">Language Levels</a>
-            <a href="#programs"      className="hover:text-accent transition-colors">Career Pathways</a>
-            <a href="#campuses"      className="hover:text-accent transition-colors">Campuses</a>
-            <a href="#contact"       className="hover:text-accent transition-colors">Contact</a>
+          <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-white/80">
+            <a href="#about"         className="hover:text-[#EAB308] transition-colors">About Us</a>
+            <a href="#levels"        className="hover:text-[#EAB308] transition-colors">Language Levels</a>
+            <a href="#programs"      className="hover:text-[#EAB308] transition-colors">Career Pathways</a>
+            <a href="#campuses"      className="hover:text-[#EAB308] transition-colors">Campuses</a>
+            <a href="#contact"       className="hover:text-[#EAB308] transition-colors">Contact</a>
           </nav>
           <div className="flex items-center gap-2">
-            <Button asChild variant="ghost" size="sm" className="hover:text-accent hover:bg-white/10"><Link to="/login/student">Student Portal</Link></Button>
-            <Button asChild variant="ghost" size="sm" className="hover:text-accent hover:bg-white/10"><Link to="/login/parent">Parent Portal</Link></Button>
-            <Button asChild variant="ghost" size="sm" className="hover:text-accent hover:bg-white/10"><Link to="/login/staff">Staff Portal</Link></Button>
-            <Button asChild size="sm" className="bg-primary hover:bg-primary-glow text-primary-foreground font-bold shadow-sm"><Link to="/login/admin">Admin</Link></Button>
+            <Button asChild variant="ghost" size="sm" className="text-white hover:text-[#EAB308] hover:bg-white/10"><Link to="/login/student">Student Portal</Link></Button>
+            <Button asChild variant="ghost" size="sm" className="text-white hover:text-[#EAB308] hover:bg-white/10"><Link to="/login/parent">Parent Portal</Link></Button>
+            <Button asChild variant="ghost" size="sm" className="text-white hover:text-[#EAB308] hover:bg-white/10"><Link to="/login/staff">Staff Portal</Link></Button>
+            <Button asChild size="sm" className="bg-[#DC2626] hover:bg-[#b91c1c] text-white font-bold shadow-sm border border-[#EAB308]/30"><Link to="/login/admin">Admin</Link></Button>
           </div>
         </div>
       </header>
@@ -68,16 +70,16 @@ export default function LandingPage() {
             </Badge>
             <h1 className="font-display font-extrabold text-5xl md:text-6xl leading-[1.05] tracking-tight">
               Mastering German,{" "}
-              <span className="text-primary">Opening Worlds</span>
+              <span className="text-[#DC2626]">Opening Worlds</span>
             </h1>
             <p className="mt-5 text-lg text-muted-foreground max-w-xl">
               HORIZON DEUTSCH TRAINING INSTITUTE offers structured German language training from A1 to C2. Prepare for your future in Germany with our expert instructors and comprehensive career pathways.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Button asChild size="lg" className="bg-primary hover:bg-primary-glow text-primary-foreground shadow-elevated font-bold">
+              <Button asChild size="lg" className="bg-[#DC2626] hover:bg-[#b91c1c] text-white shadow-elevated font-bold border border-[#EAB308]/40">
                 <Link to="/admissions">Admissions Portal <ArrowRight className="size-4 ml-2" /></Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="border-secondary text-secondary hover:bg-secondary hover:text-secondary-foreground"><a href="#programs">Explore Pathways</a></Button>
+              <Button asChild size="lg" variant="outline" className="border-[#0F172A] text-[#0F172A] hover:bg-[#0F172A] hover:text-[#EAB308] font-semibold"><a href="#programs">Explore Pathways</a></Button>
             </div>
           </div>
           <div className="lg:col-span-5 hidden lg:block">

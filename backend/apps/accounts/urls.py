@@ -5,11 +5,13 @@ from accounts.views import (
     LogoutView,
     UserProfileView,
     ChangePasswordView,
-    ResetPasswordView
+    ResetPasswordView,
+    ParentSignupView
 )
 
 urlpatterns = [
     path('login/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('signup/parent/', ParentSignupView.as_view(), name='signup_parent'),
     path('refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('logout/', LogoutView.as_view(), name='logout'),
     path('profile/', UserProfileView.as_view(), name='profile'),

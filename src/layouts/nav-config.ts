@@ -18,7 +18,9 @@ import {
   ScrollText,
   TrendingUp,
   Award,
+  BookOpen,
   MessageSquare,
+  Briefcase,
   Library,
 } from "lucide-react";
 import type { Role } from "@/types";
@@ -126,10 +128,11 @@ export const NAV: Record<Role, NavGroup[]> = {
       ],
     },
     {
-      label: "System",
+      label: "System & HR",
       items: [
-        { to: "/app/settings",   label: "Settings",   icon: Settings },
-        { to: "/app/audit-logs", label: "Audit Logs", icon: ScrollText },
+        { to: "/app/hr",         label: "HR Management", icon: Briefcase },
+        { to: "/app/settings",   label: "Settings",      icon: Settings },
+        { to: "/app/audit-logs", label: "Audit Logs",    icon: ScrollText },
       ],
     },
   ],
@@ -140,6 +143,17 @@ export const NAV: Record<Role, NavGroup[]> = {
         { to: "/app/dashboard", label: "Portal Overview", icon: LayoutDashboard },
         { to: "/app/receipts", label: "Fee Receipts", icon: ReceiptText },
         { to: "/app/communication", label: "Communication", icon: MessageSquare },
+      ],
+    },
+  ],
+  hr: [
+    {
+      label: "HR & Payroll",
+      items: [
+        { to: "/app/dashboard", label: "HR Dashboard", icon: LayoutDashboard },
+        { to: "/app/hr", label: "Staff & Payroll", icon: Briefcase },
+        { to: "/app/communication", label: "Communication", icon: MessageSquare },
+        { to: "/app/profile", label: "My Profile", icon: User },
       ],
     },
   ],

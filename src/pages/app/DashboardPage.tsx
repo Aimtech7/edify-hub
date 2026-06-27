@@ -18,6 +18,7 @@ import { useState, useEffect } from "react";
 import { paymentService } from "@/services/payment-service";
 import type { Payment } from "@/types";
 import ParentPortal from "@/components/students/ParentPortal";
+import { HrPortal } from "@/components/hr/HrPortal";
 
 export default function DashboardPage() {
   const user = useCurrentUser();
@@ -26,6 +27,7 @@ export default function DashboardPage() {
   if (user.role === "teacher") return <TeacherDash />;
   if (user.role === "accountant") return <AccountantDash />;
   if (user.role === "parent") return <ParentPortal />;
+  if (user.role === "hr") return <HrPortal />;
   return <AdminDash />;
 }
 

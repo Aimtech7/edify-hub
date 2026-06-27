@@ -61,6 +61,13 @@ export function loginAs(role: Role, username: string): AuthUser {
       role: "parent",
       email: "david.wanjiru@gmail.com",
     },
+    hr: {
+      id: "hr-101",
+      name: "Beatrix Otieno (HR Manager)",
+      username: username || "botieno",
+      role: "hr",
+      email: "hr@deutschakademie.co.ke",
+    },
   };
   const u = presets[role];
   setUser(u);
@@ -73,4 +80,5 @@ export const roleHome: Record<Role, string> = {
   accountant: "/app/dashboard",
   admin: "/app/dashboard",
   parent: "/app/dashboard",
+  hr: "/app/dashboard",
 };

@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     "odel",
     "library",
     "communication",
+    "hr",
 ]
 
 MIDDLEWARE = [

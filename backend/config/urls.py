@@ -41,6 +41,7 @@ urlpatterns = [
     path("api/odel/", include("odel.urls")),
     path("api/library/", include("library.urls")),
     path("api/communication/", include("communication.urls")),
+    path("api/hr/", include("hr.urls")),
 ]
 
 if settings.DEBUG:

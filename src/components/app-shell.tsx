@@ -6,7 +6,7 @@ import { INSTITUTION } from "@/lib/sample-data";
 import {
   LayoutDashboard, GraduationCap, FileBarChart2, Wallet, ReceiptText, User, Users, ClipboardEdit,
   CalendarCheck2, BarChart3, CreditCard, Layers3, FileSpreadsheet, Settings, ShieldCheck,
-  BookCopy, ScrollText, ChevronDown, Bell, Sun, Moon, LogOut, KeyRound, Menu, X, Search, Award,
+  BookCopy, ScrollText, ChevronDown, Bell, Sun, Moon, LogOut, KeyRound, Menu, X, Search, Award, Briefcase,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -75,7 +75,8 @@ const NAV: Record<Role, NavGroup[]> = {
       { to: "/app/fee-structure", label: "Fee Structure", icon: Wallet },
       { to: "/app/certificates", label: "Certificates", icon: Award },
     ]},
-    { label: "System", items: [
+    { label: "System & HR", items: [
+      { to: "/app/hr", label: "HR Management", icon: Briefcase },
       { to: "/app/settings", label: "Settings", icon: Settings },
       { to: "/app/audit-logs", label: "Audit Logs", icon: ScrollText },
     ]},
@@ -89,10 +90,19 @@ const NAV: Record<Role, NavGroup[]> = {
       { to: "/app/profile", label: "Profile", icon: User },
     ]},
   ],
+  hr: [
+    { label: "HR Management", items: [
+      { to: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { to: "/app/hr", label: "Staff & Payroll", icon: Briefcase },
+    ]},
+    { label: "Account", items: [
+      { to: "/app/profile", label: "Profile", icon: User },
+    ]},
+  ],
 };
 
 const roleLabel: Record<Role, string> = {
-  student: "Student", teacher: "Teacher", accountant: "Accountant", admin: "Administrator", parent: "Parent / Guardian",
+  student: "Student", teacher: "Teacher", accountant: "Accountant", admin: "Administrator", parent: "Parent / Guardian", hr: "HR Manager",
 };
 
 export function AppShell({ children }: { children: ReactNode }) {

@@ -38,6 +38,7 @@ import OdelCoursesPage from "@/pages/app/OdelCoursesPage";
 import LearningPlayerPage from "@/pages/app/LearningPlayerPage";
 import { DigitalLibraryPage } from "@/pages/app/DigitalLibraryPage";
 import { CommunicationPage } from "@/pages/app/CommunicationPage";
+import HrManagementPage from "@/pages/app/HrManagementPage";
 
 import PublicVerifyPage from "@/pages/PublicVerifyPage";
 import AdmissionsPortalPage from "@/pages/AdmissionsPortalPage";
@@ -127,8 +128,17 @@ export default function AppRoutes() {
         <Route
           path="communication"
           element={
-            <RoleProtectedRoute allowed={["student", "teacher", "accountant", "admin"]}>
+            <RoleProtectedRoute allowed={["student", "teacher", "accountant", "admin", "parent", "hr"]}>
               <CommunicationPage />
+            </RoleProtectedRoute>
+          }
+        />
+
+        <Route
+          path="hr"
+          element={
+            <RoleProtectedRoute allowed={["admin", "hr"]}>
+              <HrManagementPage />
             </RoleProtectedRoute>
           }
         />

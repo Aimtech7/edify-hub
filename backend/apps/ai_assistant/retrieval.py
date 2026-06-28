@@ -149,6 +149,19 @@ def retrieve_rag_context(user, question: str) -> tuple[str, list[dict]]:
     for score, title, snippet in best_matches[:2]:
         context_chunks.append(f"Priority 7 [General Knowledge - {title}]: {snippet}...")
 
+    # Check for German Learning / Goethe Tutoring query
+    german_keywords = ['grammar', 'vocab', 'word', 'verb', 'translate', 'conjugat', 'accusative', 'dative', 'genitive', 'preposition', 'artikel', 'der', 'die', 'das', 'sprechen', 'schreiben', 'goethe', 'german', 'deutsch', 'pronounce', 'sentence', 'meaning', 'difference between']
+    if any(k in q_lower for k in german_keywords):
+        context_chunks.insert(0, (
+            "GOETHE GERMAN TUTOR MODE ACTIVE:\n"
+            "- You are a certified Goethe-Institut examiner and experienced German teacher at Horizon Deutsch Training Institute.\n"
+            "- Explain German grammar rules clearly with practical everyday examples (in both German and English).\n"
+            "- Break down complex word formations, noun genders (Der/Die/Das), and verb conjugations step-by-step.\n"
+            "- Provide CEFR exam tips relevant to A1, A2, B1, or B2 levels when appropriate.\n"
+            "- Encourage warm, constructive learning and praise consistent practice."
+        ))
+        actions.append({"action": "NAVIGATE", "label": "Open Digital Library & Past Papers", "url": "/app/library"})
+
     # Default institutional context if empty
     if not context_chunks:
         context_chunks.append("Horizon Deutsch Training Institute is premier German training and culture center offering CEFR A1 to C2 courses, Goethe-Zertifikat preparation, and Ausbildung pathways in Kenya.")

@@ -54,7 +54,7 @@ class NotificationService:
         return True
 
     @staticmethod
-    def notify_user(user, title, message, send_email=False, send_sms=False, phone_number=None):
+    def notify_user(user, title, message, send_email=False, send_sms=False, send_whatsapp=False, phone_number=None):
         """
         Main orchestration function to notify a user via selected channels.
         """
@@ -64,5 +64,10 @@ class NotificationService:
         if send_email:
             NotificationService.send_email_notification(user, title, message)
             
-        if send_sms and phone_number:
+        if (send_sms or send_whatsapp) and phone_number:
             NotificationService.send_sms_notification(phone_number, message)
+            try:
+                from communication.whatsapp_service import WhatsAppService
+                WhatsAppService.send_message(phone_number, f"[{title}] {message}")
+            except Exception as e:
+                logger.error(f"WhatsApp notification trigger failed: {e}")

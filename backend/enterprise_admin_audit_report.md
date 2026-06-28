@@ -2,7 +2,7 @@
 
 ## 1. Registered Models in Django Admin
 
-**Total Registered:** 93
+**Total Registered:** 96
 
 - `[academics] AcademicYear` (Admin Class: `GenericAcadAdmin`)
 - `[academics] AdvisingSession` (Admin Class: `GenericAcadAdmin`)
@@ -76,11 +76,14 @@
 - `[odel] Assignment` (Admin Class: `GenericOdelAdmin`)
 - `[odel] Course` (Admin Class: `GenericOdelAdmin`)
 - `[odel] DiscussionForum` (Admin Class: `GenericOdelAdmin`)
+- `[odel] ExamSessionLog` (Admin Class: `ExamSessionLogAdmin`)
+- `[odel] ExamSubmission` (Admin Class: `ExamSubmissionAdmin`)
 - `[odel] ForumPost` (Admin Class: `GenericOdelAdmin`)
 - `[odel] ForumThread` (Admin Class: `GenericOdelAdmin`)
 - `[odel] Gradebook` (Admin Class: `GenericOdelAdmin`)
 - `[odel] Lesson` (Admin Class: `GenericOdelAdmin`)
 - `[odel] Module` (Admin Class: `GenericOdelAdmin`)
+- `[odel] OfficialExamination` (Admin Class: `OfficialExaminationAdmin`)
 - `[odel] QuestionBank` (Admin Class: `GenericOdelAdmin`)
 - `[odel] QuizAttempt` (Admin Class: `GenericOdelAdmin`)
 - `[odel] QuizQuestion` (Admin Class: `GenericOdelAdmin`)

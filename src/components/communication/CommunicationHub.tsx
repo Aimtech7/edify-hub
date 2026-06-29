@@ -79,6 +79,7 @@ export interface CommunicationHubProps {
   onMarkAsRead?: (conversationId: number) => void;
   onTogglePin?: (conversationId: number) => void;
   onToggleArchive?: (conversationId: number) => void;
+  onConversationCreated?: () => void;
   searchQuery?: string;
   onSearchChange?: (q: string) => void;
   isMuted?: boolean;
@@ -94,6 +95,7 @@ export const CommunicationHub: React.FC<CommunicationHubProps> = ({
   onMarkAsRead,
   onTogglePin,
   onToggleArchive,
+  onConversationCreated,
   searchQuery = '',
   onSearchChange,
   isMuted = false,
@@ -117,6 +119,7 @@ export const CommunicationHub: React.FC<CommunicationHubProps> = ({
   const [adminStats, setAdminStats] = useState<any>(null);
   const [showNewChatModal, setShowNewChatModal] = useState(false);
   const [newChatSubject, setNewChatSubject] = useState('');
+  const [newChatParticipants, setNewChatParticipants] = useState('');
   const [newChatType, setNewChatType] = useState<'DIRECT' | 'GROUP' | 'COURSE'>('DIRECT');
   const [newChatChannel, setNewChatChannel] = useState('GENERAL');
 
@@ -251,15 +254,34 @@ export const CommunicationHub: React.FC<CommunicationHubProps> = ({
   };
 
   const handleCreateChat = async () => {
-    if (!newChatSubject.trim()) return;
+    if (!newChatSubject.trim()) {
+      toast.error('Thread name is required.');
+      return;
+    }
     try {
-      const created = await communicationService.createConversation(newChatSubject, [], newChatType, newChatChannel);
+      const participants = newChatParticipants
+        .split(',')
+        .map((p) => p.trim())
+        .filter((p) => p.length > 0)
+        .map((p) => (isNaN(Number(p)) ? p : Number(p)));
+
+      const created = await communicationService.createConversation(newChatSubject, participants, newChatType, newChatChannel);
       toast.success(`${newChatType} chat created!`);
       setShowNewChatModal(false);
       setNewChatSubject('');
+      setNewChatParticipants('');
       setSelectedConvId(created.id);
-    } catch (e) {
-      toast.error('Failed to create chat');
+      if (onConversationCreated) onConversationCreated();
+    } catch (e: any) {
+      const errMsg =
+        e.response?.data?.error ||
+        e.response?.data?.detail ||
+        (e.response?.data && typeof e.response.data === 'object'
+          ? Object.values(e.response.data).flat().join(', ')
+          : null) ||
+        e.message ||
+        'Internal server error.';
+      toast.error(errMsg);
     }
   };
 
@@ -886,6 +908,18 @@ export const CommunicationHub: React.FC<CommunicationHubProps> = ({
                 className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-sm focus:outline-none"
               />
             </div>
+            {newChatType !== 'COURSE' && (
+              <div className="mb-4">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Participants (Usernames or IDs, comma-separated)</label>
+                <input
+                  type="text"
+                  placeholder="E.g. teacher, student1"
+                  value={newChatParticipants}
+                  onChange={(e) => setNewChatParticipants(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-sm focus:outline-none"
+                />
+              </div>
+            )}
             {newChatType === 'COURSE' && (
               <div className="mb-6">
                 <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Sub-channel</label>

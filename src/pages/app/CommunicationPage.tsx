@@ -129,6 +129,7 @@ export const CommunicationPage: React.FC = () => {
       onMarkAsRead={handleMarkAsRead}
       onTogglePin={handleTogglePin}
       onToggleArchive={handleToggleArchive}
+      onConversationCreated={() => loadData(false)}
       searchQuery={searchQuery}
       onSearchChange={setSearchQuery}
       isMuted={isMuted}

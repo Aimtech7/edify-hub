@@ -63,7 +63,15 @@ class ConversationViewSet(viewsets.ModelViewSet):
         if isinstance(participant_ids, list):
             for pid in participant_ids:
                 try:
-                    p_user = User.objects.get(pk=pid)
+                    if isinstance(pid, int) or (isinstance(pid, str) and str(pid).isdigit()):
+                        p_user = User.objects.get(pk=int(pid))
+                    else:
+                        p_user = User.objects.get(username__iexact=str(pid).strip())
+                    
+                    if conv.type == Conversation.Type.DIRECT and self.request.user.role == 'STUDENT':
+                        policy = CommunicationPermissionPolicy.objects.filter(sender_role='STUDENT', target_role=p_user.role).first()
+                        if policy and not policy.is_allowed:
+                            continue
                     conv.participants.add(p_user)
                 except User.DoesNotExist:
                     pass

@@ -85,7 +85,7 @@ export const communicationService = {
     return res.data;
   },
 
-  createConversation: async (subject: string, participantIds: number[] = [], type = 'DIRECT', courseChannel = '') => {
+  createConversation: async (subject: string, participantIds: (number | string)[] = [], type = 'DIRECT', courseChannel = '') => {
     const res = await apiClient.post<Conversation>('/communication/conversations/', {
       subject,
       participant_ids: participantIds,

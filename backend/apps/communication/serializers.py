@@ -55,6 +55,7 @@ class ConversationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Conversation
         fields = '__all__'
+        read_only_fields = ['participants', 'created_by']
 
     def get_participant_names(self, obj):
         return [u.username for u in obj.participants.all()]

@@ -1,13 +1,18 @@
 from rest_framework import serializers
 from communication.models import (
     Conversation, PrivateMessage, Announcement, BroadcastMessage,
-    PushNotificationToken, MessageReadReceipt, CommunicationAuditLog
+    PushNotificationToken, MessageReadReceipt, CommunicationAuditLog,
+    CommunicationPermissionPolicy, UserCommunicationProfile
 )
 
 class PrivateMessageSerializer(serializers.ModelSerializer):
     sender_username = serializers.CharField(source='sender.username', read_only=True)
     sender_role = serializers.CharField(source='sender.role', read_only=True)
     attachment_url = serializers.SerializerMethodField()
+    reply_to_preview = serializers.SerializerMethodField()
+    reactions = serializers.SerializerMethodField()
+    is_starred_by_me = serializers.SerializerMethodField()
+    mentions_list = serializers.SerializerMethodField()
 
     class Meta:
         model = PrivateMessage
@@ -18,6 +23,27 @@ class PrivateMessageSerializer(serializers.ModelSerializer):
         if obj.attachment and hasattr(obj.attachment, 'url'):
             return obj.attachment.url
         return None
+
+    def get_reply_to_preview(self, obj):
+        if obj.reply_to:
+            return {
+                'id': obj.reply_to.id,
+                'sender_username': obj.reply_to.sender.username,
+                'content': obj.reply_to.content[:60] + ('...' if len(obj.reply_to.content) > 60 else '')
+            }
+        return None
+
+    def get_reactions(self, obj):
+        return obj.metadata.get('reactions', {}) if isinstance(obj.metadata, dict) else {}
+
+    def get_is_starred_by_me(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return obj.starred_by.filter(id=request.user.id).exists()
+        return False
+
+    def get_mentions_list(self, obj):
+        return [u.username for u in obj.mentions.all()]
 
 class ConversationSerializer(serializers.ModelSerializer):
     messages = PrivateMessageSerializer(many=True, read_only=True)
@@ -34,7 +60,18 @@ class ConversationSerializer(serializers.ModelSerializer):
         return [u.username for u in obj.participants.all()]
 
     def get_participant_details(self, obj):
-        return [{'id': u.id, 'username': u.username, 'role': getattr(u, 'role', '')} for u in obj.participants.all()]
+        res = []
+        for u in obj.participants.all():
+            presence = "ONLINE"
+            if hasattr(u, 'comm_profile'):
+                presence = u.comm_profile.presence_status
+            res.append({
+                'id': u.id,
+                'username': u.username,
+                'role': getattr(u, 'role', ''),
+                'presence': presence
+            })
+        return res
 
     def get_unread_count(self, obj):
         request = self.context.get('request')
@@ -81,3 +118,17 @@ class CommunicationAuditLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = CommunicationAuditLog
         fields = '__all__'
+
+class CommunicationPermissionPolicySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CommunicationPermissionPolicy
+        fields = '__all__'
+
+class UserCommunicationProfileSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username', read_only=True)
+    role = serializers.CharField(source='user.role', read_only=True)
+
+    class Meta:
+        model = UserCommunicationProfile
+        fields = '__all__'
+        read_only_fields = ['user']

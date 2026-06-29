@@ -65,9 +65,9 @@ export const CommunicationPage: React.FC = () => {
     return () => clearInterval(interval);
   }, [loadData]);
 
-  const handleSendMessage = async (convId: number, content: string, file?: File | null) => {
+  const handleSendMessage = async (convId: number, content: string, file?: File | null, replyToId?: number, metadata?: any) => {
     try {
-      await communicationService.sendMessage(convId, content, file);
+      await communicationService.sendMessage(convId, content, file, file?.name, replyToId, metadata);
       await loadData(false);
     } catch (error) {
       toast.error('Failed to send message');

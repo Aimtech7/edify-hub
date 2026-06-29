@@ -14,10 +14,16 @@ import { toast } from "sonner";
 
 export default function UsersPage() {
   const [q, setQ] = useState("");
-  const list = USERS.filter((u) => !q || u.name.toLowerCase().includes(q.toLowerCase()) || u.username.toLowerCase().includes(q.toLowerCase()));
+  const [usersList, setUsersList] = useState(USERS);
+
+  const handleAddUser = (newUser: any) => {
+    setUsersList((prev) => [newUser, ...prev]);
+  };
+
+  const list = usersList.filter((u) => !q || u.name.toLowerCase().includes(q.toLowerCase()) || u.username.toLowerCase().includes(q.toLowerCase()));
   return (
     <>
-      <PageHeader title="User Management" description="Create users, assign roles and manage access." action={<NewUserDialog />} />
+      <PageHeader title="User Management" description="Create users, assign roles and manage access." action={<NewUserDialog onAddUser={handleAddUser} />} />
       <Card className="shadow-card mb-4">
         <CardContent className="p-4 relative">
           <Search className="size-4 absolute left-7 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -41,7 +47,10 @@ export default function UsersPage() {
                   <TableCell className="text-right space-x-1">
                     <Button size="sm" variant="ghost" onClick={() => toast.success(`Password reset for ${u.username}`)}><KeyRound className="size-4" /></Button>
                     <Button size="sm" variant="ghost"><Pencil className="size-4" /></Button>
-                    <Button size="sm" variant="ghost" className="text-destructive" onClick={() => toast.success(`${u.username} disabled`)}><Ban className="size-4" /></Button>
+                    <Button size="sm" variant="ghost" className="text-destructive" onClick={() => {
+                      setUsersList(prev => prev.map(item => item.id === u.id ? { ...item, status: item.status === "Active" ? "Disabled" : "Active" } : item));
+                      toast.success(`${u.username} status toggled`);
+                    }}><Ban className="size-4" /></Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -53,22 +62,42 @@ export default function UsersPage() {
   );
 }
 
-function NewUserDialog() {
+function NewUserDialog({ onAddUser }: { onAddUser: (u: any) => void }) {
   const [open, setOpen] = useState(false);
+  const [fullName, setFullName] = useState("");
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState("Teacher");
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild><Button className="gradient-primary text-primary-foreground"><Plus className="size-4 mr-2" />New user</Button></DialogTrigger>
       <DialogContent>
         <DialogHeader><DialogTitle>Create new user</DialogTitle></DialogHeader>
-        <form onSubmit={(e) => { e.preventDefault(); toast.success("User created. Invitation email sent."); setOpen(false); }} className="space-y-4">
+        <form onSubmit={(e) => { 
+          e.preventDefault(); 
+          if (!fullName || !username) { toast.error("Please fill out full name and username"); return; }
+          onAddUser({
+            id: `u_${Date.now()}`,
+            name: fullName,
+            username: username,
+            role: role,
+            status: "Active",
+            lastLogin: "Never"
+          });
+          toast.success("User created. Invitation email sent."); 
+          setOpen(false); 
+          setFullName(""); setUsername(""); setEmail("");
+        }} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5"><Label>Full name</Label><Input /></div>
-            <div className="space-y-1.5"><Label>Username</Label><Input /></div>
+            <div className="space-y-1.5"><Label>Full name</Label><Input required value={fullName} onChange={e => setFullName(e.target.value)} placeholder="e.g. Victor Kiplagat" /></div>
+            <div className="space-y-1.5"><Label>Username</Label><Input required value={username} onChange={e => setUsername(e.target.value)} placeholder="e.g. vkiplagat" /></div>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5"><Label>Email</Label><Input type="email" /></div>
+            <div className="space-y-1.5"><Label>Email</Label><Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="victor@example.com" /></div>
             <div className="space-y-1.5"><Label>Role</Label>
-              <Select defaultValue="Teacher"><SelectTrigger><SelectValue /></SelectTrigger>
+              <Select value={role} onValueChange={setRole}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>{["Student","Teacher","Accountant","Administrator"].map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
               </Select>
             </div>

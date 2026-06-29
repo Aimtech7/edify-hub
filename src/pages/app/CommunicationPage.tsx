@@ -1,122 +1,122 @@
-import React, { useState } from 'react';
-import { CommunicationHub, Conversation, Announcement, BroadcastMessage } from '../../components/communication/CommunicationHub';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { CommunicationHub } from '../../components/communication/CommunicationHub';
+import { communicationService, Conversation, Announcement, BroadcastMessage } from '../../services/communicationService';
 import { toast } from 'sonner';
 
-const initialConversations: Conversation[] = [
-  {
-    id: 1,
-    subject: 'German C1 Exam Preparation Group',
-    participant_names: ['Herr Müller', 'Anita Soila', 'Victor Kiplagat'],
-    updated_at: new Date().toISOString(),
-    messages: [
-      {
-        id: 101,
-        sender_username: 'Herr Müller',
-        content: 'Guten Morgen! Bitte vergesst nicht, den Aufsatz bis Freitag einzureichen.',
-        is_read: true,
-        created_at: new Date(Date.now() - 3600000 * 2).toISOString()
-      },
-      {
-        id: 102,
-        sender_username: 'Anita Soila',
-        content: 'Alles klar Herr Müller, vielen Dank für die Erinnerung!',
-        is_read: true,
-        created_at: new Date(Date.now() - 3600000).toISOString()
-      }
-    ]
-  },
-  {
-    id: 2,
-    subject: 'ODEL Technical Support',
-    participant_names: ['Admin Support', 'Bilha Andeka'],
-    updated_at: new Date(Date.now() - 86400000).toISOString(),
-    messages: [
-      {
-        id: 103,
-        sender_username: 'Bilha Andeka',
-        content: 'Hello, I cannot access Video Lesson 3 on the portal.',
-        is_read: true,
-        created_at: new Date(Date.now() - 86400000).toISOString()
-      }
-    ]
-  }
-];
-
-const initialAnnouncements: Announcement[] = [
-  {
-    id: 1,
-    title: 'Goethe-Institut Exam Registration Now Open',
-    content: 'Registration for the upcoming B2 and C1 German proficiency examinations is now officially open. Please contact the admissions office or register via your student portal before the deadline.',
-    target_group: 'ALL',
-    author_name: 'Registrar Office',
-    is_pinned: true,
-    created_at: new Date().toISOString()
-  },
-  {
-    id: 2,
-    title: 'Instructor Curriculum Revision Meeting',
-    content: 'All German language department instructors are requested to attend the quarterly syllabus alignment review session on Wednesday at 2 PM.',
-    target_group: 'TEACHERS',
-    author_name: 'Academic Director',
-    is_pinned: false,
-    created_at: new Date(Date.now() - 86400000 * 2).toISOString()
-  }
-];
-
-const initialBroadcasts: BroadcastMessage[] = [
-  {
-    id: 1,
-    title: 'Semester Fee Payment Reminder Dispatch',
-    message: 'Dear Student, this is a reminder that the tuition fee installment balance is due by the 30th of this month.',
-    channel: 'SMS',
-    recipient_count: 142,
-    sent_by_name: 'Finance Officer',
-    sent_at: new Date(Date.now() - 86400000).toISOString()
-  }
-];
-
 export const CommunicationPage: React.FC = () => {
-  const [conversations, setConversations] = useState<Conversation[]>(initialConversations);
-  const [announcements] = useState<Announcement[]>(initialAnnouncements);
-  const [broadcasts, setBroadcasts] = useState<BroadcastMessage[]>(initialBroadcasts);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [broadcasts, setBroadcasts] = useState<BroadcastMessage[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isMuted, setIsMuted] = useState(false);
+  const prevUnreadCountRef = useRef<number>(0);
 
-  const handleSendMessage = (convId: number, content: string) => {
-    const newMessage = {
-      id: Date.now(),
-      sender_username: 'You',
-      content: content,
-      is_read: true,
-      created_at: new Date().toISOString()
-    };
+  const playNotificationSound = useCallback(() => {
+    if (isMuted) return;
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.1); // A5
+      gain.gain.setValueAtTime(0.1, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.3);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.3);
+    } catch (e) {
+      // Audio context might be restricted before user interaction
+    }
+  }, [isMuted]);
 
-    setConversations((prev) =>
-      prev.map((conv) => {
-        if (conv.id === convId) {
-          return {
-            ...conv,
-            updated_at: new Date().toISOString(),
-            messages: [...(conv.messages || []), newMessage]
-          };
-        }
-        return conv;
-      })
-    );
-    toast.success('Message sent successfully!');
+  const loadData = useCallback(async (showError = false) => {
+    try {
+      const [convs, anns, brds] = await Promise.all([
+        communicationService.getConversations(searchQuery),
+        communicationService.getAnnouncements(),
+        communicationService.getBroadcasts(),
+      ]);
+
+      // Calculate total unreads
+      const totalUnread = convs.reduce((acc, c) => acc + (c.unread_count || 0), 0);
+      if (totalUnread > prevUnreadCountRef.current && prevUnreadCountRef.current !== 0) {
+        playNotificationSound();
+      }
+      prevUnreadCountRef.current = totalUnread;
+
+      setConversations(convs);
+      setAnnouncements(anns);
+      setBroadcasts(brds);
+    } catch (error) {
+      if (showError) {
+        toast.error('Failed to connect to communication server');
+      }
+    }
+  }, [searchQuery, playNotificationSound]);
+
+  useEffect(() => {
+    loadData(true);
+    // Real-time synchronization loop (every 3 seconds)
+    const interval = setInterval(() => {
+      loadData(false);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [loadData]);
+
+  const handleSendMessage = async (convId: number, content: string, file?: File | null) => {
+    try {
+      await communicationService.sendMessage(convId, content, file);
+      await loadData(false);
+    } catch (error) {
+      toast.error('Failed to send message');
+    }
   };
 
-  const handleSendBroadcast = (title: string, message: string, channel: string) => {
-    const newBroadcast: BroadcastMessage = {
-      id: Date.now(),
-      title,
-      message,
-      channel,
-      recipient_count: Math.floor(Math.random() * 120) + 30,
-      sent_by_name: 'You',
-      sent_at: new Date().toISOString()
-    };
+  const handleSendBroadcast = async (title: string, message: string, channel: string) => {
+    try {
+      await communicationService.sendBroadcast(title, message, channel);
+      toast.success(`Broadcast campaign queued via ${channel}!`);
+      await loadData(false);
+    } catch (error) {
+      toast.error('Failed to dispatch broadcast');
+    }
+  };
 
-    setBroadcasts((prev) => [newBroadcast, ...prev]);
-    toast.success(`Broadcast campaign queued via ${channel}!`);
+  const handleMarkAsRead = async (convId: number) => {
+    try {
+      await communicationService.markAsRead(convId);
+      setConversations((prev) =>
+        prev.map((c) => (c.id === convId ? { ...c, unread_count: 0 } : c))
+      );
+    } catch (e) {
+      // ignore silently during sync
+    }
+  };
+
+  const handleTogglePin = async (convId: number) => {
+    try {
+      const res = await communicationService.togglePin(convId);
+      setConversations((prev) =>
+        prev.map((c) => (c.id === convId ? { ...c, is_pinned: res.is_pinned } : c))
+      );
+      toast.success(res.is_pinned ? 'Conversation pinned' : 'Conversation unpinned');
+    } catch (e) {
+      toast.error('Failed to toggle pin status');
+    }
+  };
+
+  const handleToggleArchive = async (convId: number) => {
+    try {
+      const res = await communicationService.toggleArchive(convId);
+      setConversations((prev) =>
+        prev.map((c) => (c.id === convId ? { ...c, is_archived: res.is_archived } : c))
+      );
+      toast.success(res.is_archived ? 'Conversation archived' : 'Conversation unarchived');
+    } catch (e) {
+      toast.error('Failed to archive conversation');
+    }
   };
 
   return (
@@ -126,6 +126,13 @@ export const CommunicationPage: React.FC = () => {
       broadcasts={broadcasts}
       onSendMessage={handleSendMessage}
       onSendBroadcast={handleSendBroadcast}
+      onMarkAsRead={handleMarkAsRead}
+      onTogglePin={handleTogglePin}
+      onToggleArchive={handleToggleArchive}
+      searchQuery={searchQuery}
+      onSearchChange={setSearchQuery}
+      isMuted={isMuted}
+      onToggleMute={() => setIsMuted(!isMuted)}
     />
   );
 };

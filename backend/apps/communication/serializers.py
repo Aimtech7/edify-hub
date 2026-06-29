@@ -66,11 +66,14 @@ class ConversationSerializer(serializers.ModelSerializer):
             presence = "ONLINE"
             if hasattr(u, 'comm_profile'):
                 presence = u.comm_profile.presence_status
+            name = f"{u.first_name} {u.last_name}".strip() or u.username
             res.append({
                 'id': u.id,
                 'username': u.username,
+                'name': name,
                 'role': getattr(u, 'role', ''),
-                'presence': presence
+                'presence': presence,
+                'email': getattr(u, 'email', '') or ''
             })
         return res
 

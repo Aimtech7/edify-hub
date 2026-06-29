@@ -3,20 +3,36 @@ from django.conf import settings
 
 class Conversation(models.Model):
     class Type(models.TextChoices):
-        DIRECT = "DIRECT", "Direct Messaging"
-        GROUP = "GROUP", "Group Chat"
+        DIRECT = "DIRECT", "Direct Chat"
+        GROUP = "GROUP", "Department Group"
         COURSE = "COURSE", "Course Discussion"
+        CLASS = "CLASS", "Class Discussion"
+        COMMITTEE = "COMMITTEE", "Committee"
+        TICKET = "TICKET", "Support Ticket"
+        FINANCE_THREAD = "FINANCE_THREAD", "Finance Thread"
+        ADMISSIONS_THREAD = "ADMISSIONS_THREAD", "Admissions Thread"
+        PARENT_DISCUSSION = "PARENT_DISCUSSION", "Parent Discussion"
+        HR = "HR", "HR"
+        ICT = "ICT", "ICT"
+        AI_ASSISTANT = "AI_ASSISTANT", "AI Assistant"
+        INSTITUTION_ANNOUNCEMENTS = "INSTITUTION_ANNOUNCEMENTS", "Institution Announcements"
+        EMERGENCY_BROADCAST = "EMERGENCY_BROADCAST", "Emergency Broadcast"
 
-    type = models.CharField(max_length=20, choices=Type.choices, default=Type.DIRECT)
+    type = models.CharField(max_length=35, choices=Type.choices, default=Type.DIRECT)
     participants = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='conversations')
     subject = models.CharField(max_length=255, blank=True)
     avatar_url = models.URLField(blank=True)
     course_channel = models.CharField(max_length=50, blank=True)  # e.g., GENERAL, GRAMMAR, VOCABULARY, HOMEWORK
+    entity_id = models.CharField(max_length=100, blank=True)  # ID of related Course, Class, Ticket, etc.
+    entity_type = models.CharField(max_length=100, blank=True)  # e.g., 'COURSE', 'CLASS', 'TICKET'
     is_archived = models.BooleanField(default=False)
     is_pinned = models.BooleanField(default=False)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='created_conversations')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        app_label = 'communication'
 
     def __str__(self):
         return self.subject or f"Conversation #{self.id} ({self.type})"

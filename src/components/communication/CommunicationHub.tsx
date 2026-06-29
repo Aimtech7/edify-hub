@@ -4,7 +4,7 @@ import {
   Search, Smile, Mic, Sparkles, MessageSquare, Users, BookOpen, Bell, ShieldAlert,
   Reply, Star, Edit2, Trash2, X, Plus, ChevronRight, Activity, Globe, Lock
 } from 'lucide-react';
-import { communicationService } from '../../services/communicationService';
+import { communicationService, UserSearchResult, GlobalSearchResult } from '../../services/communicationService';
 import { toast } from 'sonner';
 
 export interface PrivateMessage {
@@ -122,6 +122,12 @@ export const CommunicationHub: React.FC<CommunicationHubProps> = ({
   const [newChatParticipants, setNewChatParticipants] = useState('');
   const [newChatType, setNewChatType] = useState<'DIRECT' | 'GROUP' | 'COURSE'>('DIRECT');
   const [newChatChannel, setNewChatChannel] = useState('GENERAL');
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [userSearchResults, setUserSearchResults] = useState<UserSearchResult[]>([]);
+  const [selectedParticipants, setSelectedParticipants] = useState<UserSearchResult[]>([]);
+  const [showGlobalSearchModal, setShowGlobalSearchModal] = useState(false);
+  const [globalSearchQuery, setGlobalSearchQuery] = useState('');
+  const [globalSearchResults, setGlobalSearchResults] = useState<GlobalSearchResult | null>(null);
 
   // Presence & Recording
   const [myPresence, setMyPresence] = useState('ONLINE');
@@ -253,23 +259,57 @@ export const CommunicationHub: React.FC<CommunicationHubProps> = ({
     }
   };
 
+  const handleUserSearch = async (query: string) => {
+    setUserSearchQuery(query);
+    if (!query.trim() || query.length < 2) {
+      setUserSearchResults([]);
+      return;
+    }
+    try {
+      const res = await communicationService.searchUsers(query);
+      setUserSearchResults(res);
+    } catch (e) {
+      // ignore errors during typing search
+    }
+  };
+
+  const handleGlobalSearch = async (query: string, category: string = 'ALL') => {
+    setGlobalSearchQuery(query);
+    if (!query.trim() || query.length < 2) {
+      setGlobalSearchResults(null);
+      return;
+    }
+    try {
+      const res = await communicationService.globalSearch(query, category);
+      setGlobalSearchResults(res);
+    } catch (e) {
+      // ignore
+    }
+  };
+
   const handleCreateChat = async () => {
     if (!newChatSubject.trim()) {
       toast.error('Thread name is required.');
       return;
     }
     try {
-      const participants = newChatParticipants
+      const manualParticipants = newChatParticipants
         .split(',')
         .map((p) => p.trim())
         .filter((p) => p.length > 0)
         .map((p) => (isNaN(Number(p)) ? p : Number(p)));
+
+      const selectedIds = selectedParticipants.map((p) => p.id);
+      const participants = Array.from(new Set([...selectedIds, ...manualParticipants]));
 
       const created = await communicationService.createConversation(newChatSubject, participants, newChatType, newChatChannel);
       toast.success(`${newChatType} chat created!`);
       setShowNewChatModal(false);
       setNewChatSubject('');
       setNewChatParticipants('');
+      setSelectedParticipants([]);
+      setUserSearchQuery('');
+      setUserSearchResults([]);
       setSelectedConvId(created.id);
       if (onConversationCreated) onConversationCreated();
     } catch (e: any) {
@@ -329,8 +369,13 @@ export const CommunicationHub: React.FC<CommunicationHubProps> = ({
               type="text"
               placeholder="Search enterprise hub..."
               value={searchQuery}
-              onChange={(e) => onSearchChange && onSearchChange(e.target.value)}
-              className="pl-9 pr-4 py-1.5 text-sm bg-slate-100 dark:bg-slate-800/80 border border-transparent focus:border-blue-500 rounded-full text-slate-900 dark:text-white focus:outline-none w-64 transition-all"
+              onClick={() => setShowGlobalSearchModal(true)}
+              onChange={(e) => {
+                if (onSearchChange) onSearchChange(e.target.value);
+                handleGlobalSearch(e.target.value);
+                if (!showGlobalSearchModal) setShowGlobalSearchModal(true);
+              }}
+              className="pl-9 pr-4 py-1.5 text-sm bg-slate-100 dark:bg-slate-800/80 border border-transparent focus:border-blue-500 rounded-full text-slate-900 dark:text-white focus:outline-none w-64 transition-all cursor-pointer"
             />
           </div>
 
@@ -909,15 +954,57 @@ export const CommunicationHub: React.FC<CommunicationHubProps> = ({
               />
             </div>
             {newChatType !== 'COURSE' && (
-              <div className="mb-4">
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Participants (Usernames or IDs, comma-separated)</label>
+              <div className="mb-4 relative">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Search & Select Participants</label>
+                
+                {/* Selected Participant Chips */}
+                {selectedParticipants.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-2 p-1.5 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
+                    {selectedParticipants.map((p) => (
+                      <span key={p.id} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300">
+                        {p.name} ({p.role})
+                        <button type="button" onClick={() => setSelectedParticipants(selectedParticipants.filter(sp => sp.id !== p.id))} className="hover:text-blue-600">
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+
                 <input
                   type="text"
-                  placeholder="E.g. teacher, student1"
-                  value={newChatParticipants}
-                  onChange={(e) => setNewChatParticipants(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-sm focus:outline-none"
+                  placeholder="Search by name, admission no, employee ID, role..."
+                  value={userSearchQuery}
+                  onChange={(e) => handleUserSearch(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-sm focus:outline-none border border-transparent focus:border-blue-500"
                 />
+
+                {/* Autocomplete Dropdown */}
+                {userSearchResults.length > 0 && (
+                  <div className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 divide-y divide-slate-100 dark:divide-slate-700">
+                    {userSearchResults.map((u) => (
+                      <div
+                        key={u.id}
+                        onClick={() => {
+                          if (!selectedParticipants.some(sp => sp.id === u.id)) {
+                            setSelectedParticipants([...selectedParticipants, u]);
+                          }
+                          setUserSearchQuery('');
+                          setUserSearchResults([]);
+                        }}
+                        className="p-2.5 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer flex items-center justify-between transition-colors"
+                      >
+                        <div>
+                          <div className="font-bold text-sm text-slate-800 dark:text-slate-200">{u.name}</div>
+                          <div className="text-xs text-slate-500 dark:text-slate-400">{u.subtitle} • {u.email}</div>
+                        </div>
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 uppercase">
+                          {u.role}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
             {newChatType === 'COURSE' && (
@@ -938,6 +1025,92 @@ export const CommunicationHub: React.FC<CommunicationHubProps> = ({
             >
               Create Thread
             </button>
+          </div>
+        </div>
+      {showGlobalSearchModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start justify-center z-50 p-4 pt-20">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 max-w-2xl w-full shadow-2xl flex flex-col max-h-[80vh]">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <Search className="w-5 h-5 text-blue-600" />
+                <h3 className="font-bold text-lg text-slate-900 dark:text-white">Enterprise Global Search</h3>
+              </div>
+              <button onClick={() => setShowGlobalSearchModal(false)}><X className="w-5 h-5 text-slate-400 hover:text-slate-600" /></button>
+            </div>
+            
+            <div className="mb-4">
+              <input
+                type="text"
+                placeholder="Search messages, users, announcements, documents..."
+                value={globalSearchQuery}
+                onChange={(e) => handleGlobalSearch(e.target.value)}
+                autoFocus
+                className="w-full px-4 py-3 bg-slate-100 dark:bg-slate-800 rounded-xl text-base focus:outline-none border border-transparent focus:border-blue-500"
+              />
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+              {globalSearchResults ? (
+                <>
+                  {/* Users Section */}
+                  {globalSearchResults.users.length > 0 && (
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">People</h4>
+                      <div className="space-y-1">
+                        {globalSearchResults.users.map(u => (
+                          <div key={u.id} className="p-2.5 bg-slate-50 dark:bg-slate-800/50 rounded-xl flex items-center justify-between">
+                            <div>
+                              <div className="font-bold text-sm text-slate-800 dark:text-slate-200">{u.name}</div>
+                              <div className="text-xs text-slate-500">{u.subtitle}</div>
+                            </div>
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300">{u.role}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Messages Section */}
+                  {globalSearchResults.messages.length > 0 && (
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Messages</h4>
+                      <div className="space-y-1">
+                        {globalSearchResults.messages.map(m => (
+                          <div key={m.id} onClick={() => { setSelectedConvId(m.conversation_id); setShowGlobalSearchModal(false); }} className="p-2.5 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 cursor-pointer rounded-xl transition-colors">
+                            <div className="flex items-center justify-between text-xs font-bold text-blue-600 mb-0.5">
+                              <span>{m.conversation_subject}</span>
+                              <span className="text-slate-400 text-[10px]">{new Date(m.created_at).toLocaleDateString()}</span>
+                            </div>
+                            <div className="text-xs text-slate-700 dark:text-slate-300 line-clamp-2"><span className="font-semibold">{m.sender}:</span> {m.content}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Announcements Section */}
+                  {globalSearchResults.announcements.length > 0 && (
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Announcements</h4>
+                      <div className="space-y-1">
+                        {globalSearchResults.announcements.map(a => (
+                          <div key={a.id} className="p-2.5 bg-amber-50/50 dark:bg-amber-900/10 rounded-xl">
+                            <div className="font-bold text-sm text-amber-900 dark:text-amber-300">{a.title}</div>
+                            <div className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">Priority: {a.priority}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {globalSearchResults.users.length === 0 && globalSearchResults.messages.length === 0 && globalSearchResults.announcements.length === 0 && (
+                    <div className="text-center py-8 text-slate-500 text-sm">No enterprise items matched your search query.</div>
+                  )}
+                </>
+              ) : (
+                <div className="text-center py-8 text-slate-400 text-sm">Type at least 2 characters to search across the enterprise hub.</div>
+              )}
+            </div>
           </div>
         </div>
       )}

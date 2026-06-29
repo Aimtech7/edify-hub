@@ -43,3 +43,16 @@ class CommunicationTests(TestCase):
         res_teach = self.client.get(reverse('comm-announcement-list'))
         teach_count = res_teach.data['count'] if isinstance(res_teach.data, dict) and 'count' in res_teach.data else len(res_teach.data)
         self.assertEqual(teach_count, 2)
+
+    def test_user_search_and_global_search(self):
+        self.client.force_authenticate(user=self.staff)
+        res_user_search = self.client.get(reverse('comm-usersearch-list') + '?q=comm_stu')
+        self.assertEqual(res_user_search.status_code, status.HTTP_200_OK)
+        self.assertTrue(len(res_user_search.data) >= 1)
+        self.assertEqual(res_user_search.data[0]['username'], 'comm_stu')
+
+        res_global_search = self.client.get(reverse('comm-search-list') + '?q=comm_stu')
+        self.assertEqual(res_global_search.status_code, status.HTTP_200_OK)
+        self.assertIn('users', res_global_search.data)
+        self.assertIn('messages', res_global_search.data)
+        self.assertIn('announcements', res_global_search.data)

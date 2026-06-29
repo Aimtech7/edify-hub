@@ -28,7 +28,7 @@ export interface Conversation {
   avatar_url?: string;
   course_channel?: string;
   participant_names: string[];
-  participant_details?: { id: number; username: string; role: string; presence?: string }[];
+  participant_details?: { id: number; username: string; name?: string; role: string; presence?: string; email?: string }[];
   unread_count?: number;
   last_message?: {
     content: string;
@@ -40,6 +40,31 @@ export interface Conversation {
   is_archived?: boolean;
   updated_at: string;
   messages?: PrivateMessage[];
+}
+
+export interface UserSearchResult {
+  id: number;
+  username: string;
+  name: string;
+  role: string;
+  subtitle: string;
+  identifier: string;
+  presence: string;
+  email: string;
+}
+
+export interface GlobalSearchResult {
+  users: UserSearchResult[];
+  messages: { id: number; conversation_id: number; conversation_subject: string; sender: string; content: string; created_at: string }[];
+  announcements: { id: number; title: string; priority: string; created_at: string }[];
+  documents: { id: number; title: string; category: string; file_type: string; url: string }[];
+}
+
+export interface ReadReceiptItem {
+  message_id: number;
+  user_id: number;
+  username: string;
+  read_at: string;
 }
 
 export interface Announcement {
@@ -129,9 +154,10 @@ export const communicationService = {
     }
   },
 
-  askAI: async (conversationId: number, prompt: string) => {
+  askAI: async (conversationId: number, prompt: string, action_type?: string) => {
     const res = await apiClient.post<PrivateMessage>(`/communication/conversations/${conversationId}/ask_ai/`, {
       prompt,
+      action_type: action_type || 'QUERY',
     });
     return res.data;
   },
@@ -202,6 +228,21 @@ export const communicationService = {
 
   getAdminStats: async () => {
     const res = await apiClient.get<AdminStats>('/communication/admin-stats/');
+    return res.data;
+  },
+
+  searchUsers: async (query: string) => {
+    const res = await apiClient.get<UserSearchResult[]>(`/communication/user-search/?q=${encodeURIComponent(query)}`);
+    return res.data;
+  },
+
+  globalSearch: async (query: string, category: string = 'ALL') => {
+    const res = await apiClient.get<GlobalSearchResult>(`/communication/global-search/?q=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}`);
+    return res.data;
+  },
+
+  getReadAnalytics: async (conversationId: number) => {
+    const res = await apiClient.get<ReadReceiptItem[]>(`/communication/conversations/${conversationId}/read_analytics/`);
     return res.data;
   },
 };

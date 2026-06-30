@@ -2,6 +2,7 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.utils import timezone
+import datetime
 from django.db.models import Q, Avg, Count
 from odel.models import (
     Course, Subject, Unit, Module, Lesson, Topic, Resource, StudentLessonProgress,
@@ -412,4 +413,145 @@ class ExamSubmissionViewSet(viewsets.ModelViewSet):
             
         sub.save()
         return Response(ExamSubmissionSerializer(sub, context={'request': request}).data, status=status.HTTP_200_OK)
+
+
+class GermanTeachingViewSet(viewsets.ViewSet):
+    """
+    Unified API viewset for Phase 5 German Language Teaching Platform:
+    Levels, Virtual Classrooms (Zoom/BBB), German AI Coach, and Transcripts.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    @action(detail=False, methods=['get'], url_path='levels')
+    def list_levels(self, request):
+        from academics.models import Level
+        levels = Level.objects.all().order_by('code')
+        data = []
+        for l in levels:
+            data.append({
+                "id": l.id,
+                "code": l.code,
+                "name": l.name,
+                "description": l.description,
+                "duration_weeks": l.duration_weeks,
+                "cefr_category": l.cefr_category,
+                "parent_level": l.parent_level.code if l.parent_level else None
+            })
+        return Response({"levels": data})
+
+    @action(detail=False, methods=['get', 'post'], url_path='virtual-classes')
+    def virtual_classes(self, request):
+        from academics.models import VirtualClass, Cohort
+        from odel.services.virtual_classroom_service import VirtualClassroomService
+
+        if request.method == 'GET':
+            vcs = VirtualClass.objects.all().order_by('-date', '-start_time')
+            data = []
+            for v in vcs:
+                data.append({
+                    "id": v.id,
+                    "cohort": v.cohort.name,
+                    "platform": v.platform,
+                    "meeting_id": v.meeting_id,
+                    "passcode": v.passcode,
+                    "date": str(v.date),
+                    "start_time": str(v.start_time),
+                    "end_time": str(v.end_time),
+                    "status": v.status,
+                    "waiting_room": v.waiting_room,
+                    "join_link": v.student_join_link or v.meeting_link,
+                    "host_link": v.host_link if request.user.role in ['TEACHER', 'ADMIN'] else None,
+                    "recording_url": v.recording_url
+                })
+            return Response({"virtual_classes": data})
+
+        # POST create meeting
+        if request.user.role not in ['TEACHER', 'ADMIN']:
+            return Response({"error": "Only teachers or admins can schedule virtual classes"}, status=status.HTTP_403_FORBIDDEN)
+
+        cohort_id = request.data.get('cohort_id')
+        platform = request.data.get('platform', 'Zoom')
+        date_str = request.data.get('date', str(timezone.now().date()))
+        start_time_str = request.data.get('start_time', '18:00:00')
+        end_time_str = request.data.get('end_time', '19:30:00')
+
+        cohort = Cohort.objects.filter(id=cohort_id).first() or Cohort.objects.first()
+        vc = VirtualClassroomService.schedule_meeting(
+            cohort=cohort,
+            teacher=request.user,
+            platform=platform,
+            date=datetime.datetime.strptime(date_str, '%Y-%m-%d').date(),
+            start_time=datetime.datetime.strptime(start_time_str, '%H:%M:%S').time(),
+            end_time=datetime.datetime.strptime(end_time_str, '%H:%M:%S').time()
+        )
+        return Response({"id": vc.id, "meeting_id": vc.meeting_id, "join_link": vc.student_join_link}, status=status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=['post'], url_path='attendance')
+    def record_attendance(self, request):
+        from odel.services.virtual_classroom_service import VirtualClassroomService
+        vc_id = request.data.get('virtual_class_id')
+        student_id = request.data.get('student_id')
+        interruptions = int(request.data.get('connection_interruptions', 0))
+
+        if not student_id:
+            from students.models import Student
+            st = Student.objects.filter(user=request.user).first()
+            if st:
+                student_id = st.id
+
+        if not vc_id or not student_id:
+            return Response({"error": "Missing virtual_class_id or student_id"}, status=status.HTTP_400_BAD_REQUEST)
+
+        log = VirtualClassroomService.record_attendance_telemetry(vc_id, student_id, connection_interruptions=interruptions)
+        return Response({
+            "virtual_class_id": vc_id,
+            "student_id": student_id,
+            "attendance_percentage": log.attendance_percentage,
+            "is_late": log.is_late
+        })
+
+    @action(detail=False, methods=['post'], url_path='ai-coach')
+    def ai_coach(self, request):
+        from odel.services.german_ai_coach import GermanAICoachService
+        intent = request.data.get('intent', 'GENERAL')
+        prompt = request.data.get('prompt', '')
+        level = request.data.get('level', 'B1.1')
+        context = request.data.get('context', None)
+
+        res = GermanAICoachService.assist(intent=intent, prompt=prompt, lesson_context=context, level_code=level)
+        return Response(res)
+
+    @action(detail=False, methods=['get'], url_path='transcript')
+    def transcript(self, request):
+        from odel.services.transcript_service import TranscriptService
+        student_id = request.query_params.get('student_id')
+        if not student_id:
+            from students.models import Student
+            st = Student.objects.filter(user=request.user).first()
+            if st:
+                student_id = st.id
+            else:
+                st = Student.objects.first()
+                if st:
+                    student_id = st.id
+
+        if not student_id:
+            return Response({"error": "No student found"}, status=status.HTTP_404_NOT_FOUND)
+
+        data = TranscriptService.generate_academic_transcript(student_id)
+        return Response(data)
+
+    @action(detail=False, methods=['post'], url_path='issue-certificate')
+    def issue_certificate(self, request):
+        from odel.services.transcript_service import TranscriptService
+        student_id = request.data.get('student_id')
+        level_id = request.data.get('level_id')
+        if not student_id or not level_id:
+            return Response({"error": "Missing student_id or level_id"}, status=status.HTTP_400_BAD_REQUEST)
+
+        res = TranscriptService.verify_and_issue_certificate(student_id, level_id, issued_by=request.user)
+        if res["success"]:
+            return Response(res, status=status.HTTP_201_CREATED)
+        return Response(res, status=status.HTTP_400_BAD_REQUEST)
+
 

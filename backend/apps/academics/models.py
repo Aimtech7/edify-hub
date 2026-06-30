@@ -176,18 +176,49 @@ class TimetableEvent(models.Model):
         return f"{self.cohort.name} - {self.subject} ({self.date})"
 
 class VirtualClass(models.Model):
+    class Status(models.TextChoices):
+        SCHEDULED = "SCHEDULED", "Scheduled"
+        LIVE = "LIVE", "Live Now"
+        ENDED = "ENDED", "Ended"
+
     cohort = models.ForeignKey(Cohort, on_delete=models.CASCADE, related_name='virtual_classes')
     teacher = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    platform = models.CharField(max_length=50, choices=[('Zoom', 'Zoom'), ('Google Meet', 'Google Meet'), ('Teams', 'Microsoft Teams')])
+    platform = models.CharField(max_length=50, choices=[('Zoom', 'Zoom'), ('BBB', 'BigBlueButton'), ('Google Meet', 'Google Meet'), ('Teams', 'Microsoft Teams')])
     meeting_link = models.URLField()
+    host_link = models.URLField(blank=True, help_text="Host start URL for instructor")
+    student_join_link = models.URLField(blank=True, help_text="Direct join link for enrolled students")
+    recording_url = models.URLField(blank=True, help_text="Replay video recording URL")
     meeting_id = models.CharField(max_length=100, blank=True)
     passcode = models.CharField(max_length=50, blank=True)
     date = models.DateField()
     start_time = models.TimeField()
     end_time = models.TimeField()
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.SCHEDULED)
+    waiting_room = models.BooleanField(default=True)
+    is_recurring = models.BooleanField(default=False)
+    timezone = models.CharField(max_length=50, default="Africa/Nairobi")
 
     def __str__(self):
         return f"{self.cohort.name} - {self.platform} ({self.date})"
+
+
+class VirtualAttendanceLog(models.Model):
+    virtual_class = models.ForeignKey(VirtualClass, on_delete=models.CASCADE, related_name='attendance_logs')
+    student = models.ForeignKey('students.Student', on_delete=models.CASCADE, related_name='virtual_attendances')
+    join_time = models.DateTimeField(auto_now_add=True)
+    leave_time = models.DateTimeField(null=True, blank=True)
+    duration_minutes = models.PositiveIntegerField(default=0)
+    is_late = models.BooleanField(default=False)
+    connection_interruptions = models.PositiveIntegerField(default=0)
+    attendance_percentage = models.FloatField(default=100.0)
+    verified_by_teacher = models.BooleanField(default=True)
+
+    class Meta:
+        unique_together = ['virtual_class', 'student']
+        ordering = ['-join_time']
+
+    def __str__(self):
+        return f"{self.student.admission_number} in {self.virtual_class} ({self.attendance_percentage}%)"
 
 class LearningResource(models.Model):
     class Type(models.TextChoices):

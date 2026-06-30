@@ -5,10 +5,12 @@ from odel.views import (
     TopicViewSet, ResourceViewSet, RecordedLectureViewSet, DiscussionForumViewSet,
     ForumThreadViewSet, ForumPostViewSet, AssignmentViewSet, AssignmentSubmissionViewSet,
     QuestionBankViewSet, QuizViewSet, QuizQuestionViewSet, QuizAttemptViewSet, GradebookViewSet,
-    OfficialExaminationViewSet, ExamSessionLogViewSet, ExamSubmissionViewSet
+    OfficialExaminationViewSet, ExamSessionLogViewSet, ExamSubmissionViewSet,
+    GermanTeachingViewSet
 )
 
 router = DefaultRouter()
+router.register('german', GermanTeachingViewSet, basename='odel-german')
 router.register('courses', CourseViewSet, basename='odel-course')
 router.register('subjects', SubjectViewSet, basename='odel-subject')
 router.register('units', UnitViewSet, basename='odel-unit')

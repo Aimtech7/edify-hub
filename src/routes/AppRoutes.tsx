@@ -50,6 +50,7 @@ import { SecureExamsPage } from "@/pages/app/SecureExamsPage";
 import { ExamManagementPage } from "@/pages/app/ExamManagementPage";
 import AutomationEnginePage from "@/pages/app/AutomationEnginePage";
 import ExecutiveCommandCenterPage from "@/pages/app/ExecutiveCommandCenterPage";
+import GermanLearningPortalPage from "@/pages/app/GermanLearningPortalPage";
 
 import PublicVerifyPage from "@/pages/PublicVerifyPage";
 import AdmissionsPortalPage from "@/pages/AdmissionsPortalPage";
@@ -334,6 +335,7 @@ export default function AppRoutes() {
             </RoleProtectedRoute>
           }
         />
+        <Route path="german-portal" element={<GermanLearningPortalPage />} />
       </Route>
 
       <Route path="*" element={<NotFoundPage />} />

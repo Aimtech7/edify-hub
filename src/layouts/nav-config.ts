@@ -43,6 +43,7 @@ export const NAV: Record<Role, NavGroup[]> = {
       items: [
         { to: "/app/dashboard", label: "Dashboard",      icon: LayoutDashboard },
         { to: "/app/player",    label: "E-Learning LMS", icon: BookCopy },
+        { to: "/app/german-portal", label: "German Hub (ODEL)", icon: BookOpen },
         { to: "/app/library",   label: "Digital Library", icon: Library },
         { to: "/app/lesson-resources", label: "Lesson Resources", icon: BookOpen },
         { to: "/app/knowledge-base", label: "Knowledge Base", icon: ScrollText },
@@ -72,6 +73,7 @@ export const NAV: Record<Role, NavGroup[]> = {
       items: [
         { to: "/app/dashboard",  label: "Dashboard",        icon: LayoutDashboard },
         { to: "/app/admissions-queue", label: "Admissions Bridge", icon: Users },
+        { to: "/app/german-portal", label: "German Hub (ODEL)", icon: BookOpen },
         { to: "/app/odel-courses", label: "ODEL Courses",    icon: BookCopy },
         { to: "/app/lesson-resources", label: "Lesson Resources", icon: BookOpen },
         { to: "/app/knowledge-base", label: "Knowledge Base", icon: ScrollText },
@@ -138,6 +140,7 @@ export const NAV: Record<Role, NavGroup[]> = {
     {
       label: "Academic",
       items: [
+        { to: "/app/german-portal", label: "German Hub (ODEL)", icon: BookOpen },
         { to: "/app/odel-courses",  label: "ODEL Courses",     icon: BookCopy },
         { to: "/app/library",       label: "Digital Library",  icon: Library },
         { to: "/app/levels",        label: "Language Levels",  icon: TrendingUp },

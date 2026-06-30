@@ -8,8 +8,20 @@ export const CommunicationPage: React.FC = () => {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [broadcasts, setBroadcasts] = useState<BroadcastMessage[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(() => localStorage.getItem('horizon_comm_sound_muted') === 'true');
   const prevUnreadCountRef = useRef<number>(0);
+
+  const handleToggleMute = async () => {
+    const nextMuted = !isMuted;
+    setIsMuted(nextMuted);
+    localStorage.setItem('horizon_comm_sound_muted', String(nextMuted));
+    toast.success(nextMuted ? 'Audio notifications muted' : 'Audio notifications unmuted');
+    try {
+      await communicationService.updatePresence('ONLINE', '', nextMuted);
+    } catch (e) {
+      // ignore
+    }
+  };
 
   const playNotificationSound = useCallback(() => {
     if (isMuted) return;
@@ -133,7 +145,7 @@ export const CommunicationPage: React.FC = () => {
       searchQuery={searchQuery}
       onSearchChange={setSearchQuery}
       isMuted={isMuted}
-      onToggleMute={() => setIsMuted(!isMuted)}
+      onToggleMute={handleToggleMute}
     />
   );
 };

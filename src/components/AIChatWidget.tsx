@@ -14,6 +14,7 @@ interface Message {
   timestamp: string;
   actions?: Array<{ action: string; label: string; url: string }>;
   documents?: Array<{ title: string; url: string; size?: string }>;
+  citations?: string[];
   logId?: number;
   feedbackGiven?: 'HELPFUL' | 'NOT_HELPFUL';
 }
@@ -157,6 +158,7 @@ export default function AIChatWidget() {
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           actions: data.actions || [],
           documents: simulatedDocs.length > 0 ? simulatedDocs : undefined,
+          citations: data.citations || [],
           logId: data.log_id
         };
         const updated = [...nextMessages, aiMsg];
@@ -521,6 +523,18 @@ export default function AIChatWidget() {
                                   <ExternalLink className="size-3" /> Open
                                 </button>
                               </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Institutional RAG Citations */}
+                      {msg.citations && msg.citations.length > 0 && (
+                        <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700 space-y-1">
+                          <span className="text-[10px] font-bold text-amber-500 uppercase tracking-wider block">📚 RAG Verified Sources:</span>
+                          {msg.citations.map((cite, cIdx) => (
+                            <div key={cIdx} className="text-[11px] text-slate-500 dark:text-slate-400 font-mono bg-slate-100 dark:bg-slate-900 px-2 py-1 rounded">
+                              {cite}
                             </div>
                           ))}
                         </div>

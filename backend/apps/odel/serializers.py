@@ -3,8 +3,14 @@ from odel.models import (
     Course, Subject, Unit, Module, Lesson, Topic, Resource, StudentLessonProgress,
     RecordedLecture, DiscussionForum, ForumThread, ForumPost, Assignment,
     AssignmentSubmission, QuestionBank, Quiz, QuizQuestion, QuizAttempt, Gradebook,
-    OfficialExamination, ExamSessionLog, ExamSubmission
+    OfficialExamination, ExamSessionLog, ExamSubmission, StudentLessonNote
 )
+
+class StudentLessonNoteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StudentLessonNote
+        fields = '__all__'
+        read_only_fields = ['student', 'created_at', 'updated_at']
 
 class ResourceSerializer(serializers.ModelSerializer):
     class Meta:
@@ -161,22 +167,29 @@ class ExamSubmissionSerializer(serializers.ModelSerializer):
     admission_number = serializers.CharField(source='student.admission_number', read_only=True, default='')
     exam_title = serializers.CharField(source='examination.title', read_only=True, default='')
     exam_code = serializers.CharField(source='examination.exam_code', read_only=True, default='')
+    moderated_by_name = serializers.SerializerMethodField()
 
     class Meta:
         model = ExamSubmission
         fields = '__all__'
-        read_only_fields = ['receipt_number', 'submitted_at', 'graded_by', 'graded_at', 'published_at']
+        read_only_fields = ['receipt_number', 'submitted_at', 'graded_by', 'graded_at', 'published_at', 'moderated_by', 'moderated_at']
 
     def get_student_name(self, obj):
         if obj.student and hasattr(obj.student, 'user') and obj.student.user:
             return f"{obj.student.user.first_name} {obj.student.user.last_name}".strip() or obj.student.user.username
         return obj.student.admission_number if obj.student else "Unknown"
 
+    def get_moderated_by_name(self, obj):
+        if obj.moderated_by:
+            return f"{obj.moderated_by.first_name} {obj.moderated_by.last_name}".strip() or obj.moderated_by.username
+        return ""
+
 
 class OfficialExaminationSerializer(serializers.ModelSerializer):
     course_name = serializers.CharField(source='course.title', read_only=True, default='')
     level_code = serializers.CharField(source='level.code', read_only=True, default='')
     created_by_name = serializers.SerializerMethodField()
+    teacher_name = serializers.SerializerMethodField()
     submissions_count = serializers.SerializerMethodField()
     user_submission = serializers.SerializerMethodField()
     active_session = serializers.SerializerMethodField()
@@ -189,6 +202,11 @@ class OfficialExaminationSerializer(serializers.ModelSerializer):
         if obj.created_by:
             return f"{obj.created_by.first_name} {obj.created_by.last_name}".strip() or obj.created_by.username
         return "Examination Board"
+
+    def get_teacher_name(self, obj):
+        if obj.teacher:
+            return f"{obj.teacher.first_name} {obj.teacher.last_name}".strip() or obj.teacher.username
+        return self.get_created_by_name(obj)
 
     def get_submissions_count(self, obj):
         return obj.submissions.count()

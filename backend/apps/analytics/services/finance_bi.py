@@ -94,7 +94,7 @@ def get_finance_bi_data():
     except Exception:
         pass
 
-    # Trial Balance Summary
+    # Trial Balance Summary — only verified ledger figures, no estimates
     trial_balance = {
         "debits": {
             "cash_and_bank": round(total_col - refunds_sum, 2),
@@ -102,7 +102,8 @@ def get_finance_bi_data():
         },
         "credits": {
             "tuition_revenue": round(total_col, 2),
-            "unearned_revenue": round(pending_alloc * 5000.0, 2)
+            "refunds_issued": round(refunds_sum, 2),
+            "discounts_applied": round(discounts_sum, 2),
         }
     }
 

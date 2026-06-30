@@ -14,6 +14,8 @@ export function ExamManagementPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [title, setTitle] = useState('');
   const [examCode, setExamCode] = useState('');
+  const [examType, setExamType] = useState('GOETHE_MOCK');
+  const [description, setDescription] = useState('');
   const [level, setLevel] = useState('1'); // Default level id or code
   const [duration, setDuration] = useState(120);
   const [maxMarks, setMaxMarks] = useState(100);
@@ -22,6 +24,7 @@ export function ExamManagementPage() {
   const [endTime, setEndTime] = useState('2026-07-01T12:00');
   const [instructions, setInstructions] = useState('');
   const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [supportingFile, setSupportingFile] = useState<File | null>(null);
   const [creating, setCreating] = useState(false);
 
   // Grading Modal
@@ -31,6 +34,12 @@ export function ExamManagementPage() {
   const [markedScriptFile, setMarkedScriptFile] = useState<File | null>(null);
   const [markingStatus, setMarkingStatus] = useState('GRADED');
   const [savingGrade, setSavingGrade] = useState(false);
+
+  // Moderation Modal
+  const [moderatingSub, setModeratingSub] = useState<any | null>(null);
+  const [modStatus, setModStatus] = useState('APPROVED');
+  const [modNotes, setModNotes] = useState('');
+  const [savingMod, setSavingMod] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -73,6 +82,8 @@ export function ExamManagementPage() {
       const formData = new FormData();
       formData.append('title', title);
       formData.append('exam_code', examCode);
+      formData.append('exam_type', examType);
+      formData.append('description', description);
       formData.append('level', level);
       formData.append('duration_minutes', duration.toString());
       formData.append('maximum_marks', maxMarks.toString());
@@ -82,6 +93,7 @@ export function ExamManagementPage() {
       formData.append('exam_instructions', instructions);
       formData.append('publish_status', 'PUBLISHED');
       if (pdfFile) formData.append('exam_paper_pdf', pdfFile);
+      if (supportingFile) formData.append('supporting_files', supportingFile);
 
       const res = await fetch('/api/odel/formal-exams/', {
         method: 'POST',
@@ -133,6 +145,38 @@ export function ExamManagementPage() {
       alert("Network failure.");
     } finally {
       setSavingGrade(false);
+    }
+  };
+
+  const handleModerate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!moderatingSub) return;
+    setSavingMod(true);
+    try {
+      const token = localStorage.getItem('horizon_access_token') || localStorage.getItem('token') || '';
+      const res = await fetch(`/api/odel/formal-submissions/${moderatingSub.id}/moderate/`, {
+        method: 'POST',
+        headers: {
+          'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          moderation_status: modStatus,
+          moderator_notes: modNotes
+        })
+      });
+
+      if (res.ok) {
+        alert("✅ Moderation Decision Recorded!");
+        setModeratingSub(null);
+        fetchData();
+      } else {
+        alert("Error saving moderation decision.");
+      }
+    } catch (e) {
+      alert("Network failure during moderation.");
+    } finally {
+      setSavingMod(false);
     }
   };
 
@@ -190,7 +234,7 @@ export function ExamManagementPage() {
             <Card key={ex.id} className="border border-border hover:border-primary/40 transition-all shadow-sm flex flex-col justify-between">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between text-xs font-semibold mb-1">
-                  <span className="bg-primary/10 text-primary px-2 py-0.5 rounded font-mono">{ex.exam_code}</span>
+                  <span className="bg-primary/10 text-primary px-2 py-0.5 rounded font-mono">{ex.exam_code} • {ex.exam_type || 'GOETHE_MOCK'}</span>
                   <span className="text-muted-foreground">{ex.publish_status}</span>
                 </div>
                 <CardTitle className="text-lg font-bold">{ex.title}</CardTitle>
@@ -201,13 +245,25 @@ export function ExamManagementPage() {
                   <div className="flex justify-between"><span className="text-muted-foreground">Submissions Received:</span> <strong className="text-primary font-bold">{ex.submissions_count} Scripts</strong></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">Passing Score:</span> <strong>{ex.passing_marks} / {ex.maximum_marks}</strong></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">Schedule:</span> <span>{new Date(ex.start_datetime).toLocaleDateString()}</span></div>
+                  {ex.checksum && (
+                    <div className="text-[10px] text-muted-foreground truncate font-mono pt-1 border-t border-border mt-1">
+                      SHA256: {ex.checksum.substring(0, 24)}...
+                    </div>
+                  )}
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {ex.exam_paper_pdf && (
                     <a href={ex.exam_paper_pdf} target="_blank" rel="noreferrer" className="flex-1">
                       <Button variant="outline" size="sm" className="w-full text-xs flex items-center gap-1">
-                        <Download className="w-3.5 h-3.5" /> View PDF Paper
+                        <Download className="w-3.5 h-3.5" /> View Paper
+                      </Button>
+                    </a>
+                  )}
+                  {ex.supporting_files && (
+                    <a href={ex.supporting_files} target="_blank" rel="noreferrer" className="flex-1">
+                      <Button variant="outline" size="sm" className="w-full text-xs flex items-center gap-1">
+                        <Download className="w-3.5 h-3.5" /> Supporting Audio/Data
                       </Button>
                     </a>
                   )}
@@ -236,7 +292,7 @@ export function ExamManagementPage() {
                       <th className="p-3">Receipt / Student</th>
                       <th className="p-3">Examination</th>
                       <th className="p-3">Submitted At</th>
-                      <th className="p-3">Status</th>
+                      <th className="p-3">Status / Moderation</th>
                       <th className="p-3">Score / Grade</th>
                       <th className="p-3 text-right">Actions</th>
                     </tr>
@@ -247,24 +303,36 @@ export function ExamManagementPage() {
                         <td className="p-3">
                           <strong className="block font-mono text-primary">{sub.receipt_number}</strong>
                           <span className="text-muted-foreground">{sub.student_name} ({sub.admission_number})</span>
+                          {sub.student_comments && (
+                            <div className="text-[11px] text-muted-foreground italic mt-1 bg-muted/40 p-1 rounded border border-border">
+                              "{sub.student_comments}"
+                            </div>
+                          )}
                         </td>
                         <td className="p-3 font-medium">{sub.exam_code}: {sub.exam_title}</td>
                         <td className="p-3">
                           {new Date(sub.submitted_at).toLocaleString()}
                           {sub.is_late && <span className="ml-1.5 bg-destructive/20 text-destructive px-1.5 py-0.5 rounded text-[10px] font-bold">LATE</span>}
                         </td>
-                        <td className="p-3">
-                          <span className={`px-2 py-0.5 rounded font-semibold ${
+                        <td className="p-3 space-y-1">
+                          <span className={`px-2 py-0.5 rounded font-semibold block w-fit ${
                             sub.marking_status === 'PUBLISHED' ? 'bg-success/20 text-success' :
                             sub.marking_status === 'GRADED' ? 'bg-primary/20 text-primary' : 'bg-warning/20 text-warning'
                           }`}>
                             {sub.marking_status}
                           </span>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold block w-fit ${
+                            sub.moderation_status === 'APPROVED' ? 'bg-success/10 text-success border border-success/30' :
+                            sub.moderation_status === 'RETURNED' ? 'bg-destructive/10 text-destructive border border-destructive/30' :
+                            'bg-muted text-muted-foreground'
+                          }`}>
+                            Mod: {sub.moderation_status || 'PENDING'}
+                          </span>
                         </td>
                         <td className="p-3 font-bold">
                           {sub.marks_obtained !== null ? `${sub.marks_obtained} (${sub.grade})` : '—'}
                         </td>
-                        <td className="p-3 text-right space-x-2">
+                        <td className="p-3 text-right space-x-1.5">
                           {sub.uploaded_file && (
                             <a href={sub.uploaded_file} target="_blank" rel="noreferrer">
                               <Button variant="outline" size="sm" className="h-7 px-2 text-xs">
@@ -272,13 +340,20 @@ export function ExamManagementPage() {
                               </Button>
                             </a>
                           )}
-                          <Button variant="default" size="sm" className="h-7 px-2 text-xs flex inline-flex items-center gap-1" onClick={() => {
+                          <Button variant="default" size="sm" className="h-7 px-2 text-xs inline-flex items-center gap-1" onClick={() => {
                             setGradingSub(sub);
                             setMarksGiven(sub.marks_obtained || '');
                             setFeedback(sub.teacher_feedback || '');
                             setMarkingStatus(sub.marking_status || 'GRADED');
                           }}>
                             <Edit3 className="w-3.5 h-3.5" /> Grade
+                          </Button>
+                          <Button variant="secondary" size="sm" className="h-7 px-2 text-xs inline-flex items-center gap-1" onClick={() => {
+                            setModeratingSub(sub);
+                            setModStatus(sub.moderation_status || 'APPROVED');
+                            setModNotes(sub.moderator_notes || '');
+                          }}>
+                            <ShieldAlert className="w-3.5 h-3.5" /> Moderate
                           </Button>
                         </td>
                       </tr>
@@ -341,18 +416,35 @@ export function ExamManagementPage() {
               <div><label className="font-semibold block mb-1">Exam Title</label><input required value={title} onChange={e=>setTitle(e.target.value)} placeholder="e.g. Goethe-Zertifikat B1 Mock Exam" className="w-full bg-background border border-border rounded p-2 text-foreground"/></div>
               <div className="grid grid-cols-2 gap-2">
                 <div><label className="font-semibold block mb-1">Exam Code</label><input required value={examCode} onChange={e=>setExamCode(e.target.value)} placeholder="HEX-2026-B1" className="w-full bg-background border border-border rounded p-2 text-foreground"/></div>
-                <div><label className="font-semibold block mb-1">Level ID</label><input required value={level} onChange={e=>setLevel(e.target.value)} placeholder="1 (A1/B1)" className="w-full bg-background border border-border rounded p-2 text-foreground"/></div>
+                <div>
+                  <label className="font-semibold block mb-1">Exam Type</label>
+                  <select value={examType} onChange={e=>setExamType(e.target.value)} className="w-full bg-background border border-border rounded p-2 text-foreground">
+                    <option value="PLACEMENT">Placement Test</option>
+                    <option value="CAT">Continuous Assessment (CAT)</option>
+                    <option value="MIDTERM">Midterm Examination</option>
+                    <option value="FINAL">Final Semester Exam</option>
+                    <option value="ORAL">Oral Examination</option>
+                    <option value="LISTENING">Listening Assessment (Hören)</option>
+                    <option value="SPEAKING">Speaking Assessment (Sprechen)</option>
+                    <option value="READING">Reading Assessment (Lesen)</option>
+                    <option value="WRITING">Writing Assessment (Schreiben)</option>
+                    <option value="GOETHE_MOCK">Goethe-Zertifikat Mock Exam</option>
+                  </select>
+                </div>
               </div>
               <div className="grid grid-cols-3 gap-2">
+                <div><label className="font-semibold block mb-1">Level ID</label><input required value={level} onChange={e=>setLevel(e.target.value)} placeholder="1 (A1/B1)" className="w-full bg-background border border-border rounded p-2 text-foreground"/></div>
                 <div><label className="font-semibold block mb-1">Duration (Mins)</label><input type="number" required value={duration} onChange={e=>setDuration(Number(e.target.value))} className="w-full bg-background border border-border rounded p-2 text-foreground"/></div>
                 <div><label className="font-semibold block mb-1">Max Marks</label><input type="number" required value={maxMarks} onChange={e=>setMaxMarks(Number(e.target.value))} className="w-full bg-background border border-border rounded p-2 text-foreground"/></div>
-                <div><label className="font-semibold block mb-1">Passing Marks</label><input type="number" required value={passingMarks} onChange={e=>setPassingMarks(Number(e.target.value))} className="w-full bg-background border border-border rounded p-2 text-foreground"/></div>
               </div>
               <div className="grid grid-cols-2 gap-2">
+                <div><label className="font-semibold block mb-1">Passing Marks</label><input type="number" required value={passingMarks} onChange={e=>setPassingMarks(Number(e.target.value))} className="w-full bg-background border border-border rounded p-2 text-foreground"/></div>
                 <div><label className="font-semibold block mb-1">Start Date & Time</label><input type="datetime-local" required value={startTime} onChange={e=>setStartTime(e.target.value)} className="w-full bg-background border border-border rounded p-2 text-foreground"/></div>
-                <div><label className="font-semibold block mb-1">End Date & Time</label><input type="datetime-local" required value={endTime} onChange={e=>setEndTime(e.target.value)} className="w-full bg-background border border-border rounded p-2 text-foreground"/></div>
               </div>
+              <div><label className="font-semibold block mb-1">End Date & Time</label><input type="datetime-local" required value={endTime} onChange={e=>setEndTime(e.target.value)} className="w-full bg-background border border-border rounded p-2 text-foreground"/></div>
+              <div><label className="font-semibold block mb-1">Description / Overview</label><input value={description} onChange={e=>setDescription(e.target.value)} placeholder="Summary for knowledge base..." className="w-full bg-background border border-border rounded p-2 text-foreground"/></div>
               <div><label className="font-semibold block mb-1">Upload Official PDF Exam Paper</label><input type="file" accept=".pdf,.docx" onChange={e=>setPdfFile(e.target.files?.[0]||null)} className="w-full bg-background border border-border rounded p-2"/></div>
+              <div><label className="font-semibold block mb-1">Supporting Audio/Data Files (ZIP/MP3 - Optional)</label><input type="file" accept=".zip,.mp3,.rar" onChange={e=>setSupportingFile(e.target.files?.[0]||null)} className="w-full bg-background border border-border rounded p-2"/></div>
               <div><label className="font-semibold block mb-1">Instructor Instructions</label><textarea rows={2} value={instructions} onChange={e=>setInstructions(e.target.value)} placeholder="Proctoring notes..." className="w-full bg-background border border-border rounded p-2 text-foreground"/></div>
               <div className="flex justify-end gap-2 pt-3 border-t border-border">
                 <Button type="button" variant="ghost" onClick={()=>setShowCreateModal(false)}>Cancel</Button>
@@ -399,6 +491,41 @@ export function ExamManagementPage() {
               <div className="flex justify-end gap-2 pt-3 border-t border-border">
                 <Button type="button" variant="ghost" onClick={()=>setGradingSub(null)}>Cancel</Button>
                 <Button type="submit" disabled={savingGrade} className="font-bold flex items-center gap-1.5"><Send className="w-3.5 h-3.5"/> {savingGrade ? "Saving..." : "Save & Release evaluation"}</Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Moderation Modal */}
+      {moderatingSub && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fadeIn">
+          <div className="bg-card border border-border rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl text-card-foreground">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <h3 className="text-lg font-bold flex items-center gap-2"><ShieldAlert className="w-5 h-5 text-warning"/> Quality Assurance & Moderation</h3>
+              <button onClick={() => setModeratingSub(null)} className="text-muted-foreground">✕</button>
+            </div>
+            <form onSubmit={handleModerate} className="space-y-3 text-xs">
+              <div className="bg-muted/40 p-3 rounded space-y-1">
+                <div><span>Receipt:</span> <strong className="text-foreground">{moderatingSub.receipt_number}</strong></div>
+                <div><span>Student:</span> <strong className="text-foreground">{moderatingSub.student_name}</strong></div>
+                <div><span>Proposed Marks:</span> <strong className="text-primary">{moderatingSub.marks_obtained !== null ? `${moderatingSub.marks_obtained} (${moderatingSub.grade})` : 'Not Graded Yet'}</strong></div>
+              </div>
+              <div>
+                <label className="font-semibold block mb-1">Moderation Decision</label>
+                <select value={modStatus} onChange={e=>setModStatus(e.target.value)} className="w-full bg-background border border-border rounded p-2 text-foreground font-semibold">
+                  <option value="APPROVED">APPROVE (Verify & Publish Grade)</option>
+                  <option value="RETURNED">RETURN TO INSTRUCTOR (Needs Remarking)</option>
+                  <option value="PENDING">PENDING (Keep under quality review)</option>
+                </select>
+              </div>
+              <div>
+                <label className="font-semibold block mb-1">Moderator Audit Notes / Justification</label>
+                <textarea rows={3} required value={modNotes} onChange={e=>setModNotes(e.target.value)} placeholder="Checked against marking scheme. Score verified..." className="w-full bg-background border border-border rounded p-2 text-foreground"/>
+              </div>
+              <div className="flex justify-end gap-2 pt-3 border-t border-border">
+                <Button type="button" variant="ghost" onClick={()=>setModeratingSub(null)}>Cancel</Button>
+                <Button type="submit" disabled={savingMod} className="font-bold flex items-center gap-1.5"><ShieldAlert className="w-3.5 h-3.5"/> {savingMod ? "Recording..." : "Confirm Decision"}</Button>
               </div>
             </form>
           </div>

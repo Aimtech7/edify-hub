@@ -37,6 +37,7 @@ export function SecureExamsPage() {
 
   // Upload submission state
   const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [studentComments, setStudentComments] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submissionReceipt, setSubmissionReceipt] = useState<any>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -164,6 +165,7 @@ export function SecureExamsPage() {
       const token = localStorage.getItem('horizon_access_token') || localStorage.getItem('token') || '';
       const formData = new FormData();
       formData.append('uploaded_file', uploadFile);
+      formData.append('student_comments', studentComments);
 
       const res = await fetch(`/api/odel/formal-exams/${selectedExam.id}/submit-script/`, {
         method: 'POST',
@@ -355,6 +357,14 @@ export function SecureExamsPage() {
                     <p className="text-[11px] text-muted-foreground">
                       Timestamp: {new Date(submissionReceipt.submitted_at).toLocaleString()}
                     </p>
+                    <div className="flex justify-center gap-2 pt-1">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                        submissionReceipt.moderation_status === 'APPROVED' ? 'bg-success/20 text-success' :
+                        submissionReceipt.moderation_status === 'RETURNED' ? 'bg-destructive/20 text-destructive' : 'bg-warning/20 text-warning'
+                      }`}>
+                        QA Status: {submissionReceipt.moderation_status || 'PENDING'}
+                      </span>
+                    </div>
                     {submissionReceipt.marking_status === 'GRADED' || submissionReceipt.marking_status === 'PUBLISHED' ? (
                       <div className="pt-2 border-t border-border mt-2 text-left">
                         <span className="text-xs font-bold block">Score: {submissionReceipt.marks_obtained} / {selectedExam.maximum_marks} ({submissionReceipt.grade})</span>
@@ -376,6 +386,16 @@ export function SecureExamsPage() {
                         required
                         onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
                         className="w-full text-xs bg-background border border-border rounded-lg p-2 file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold mb-1">Student Comments / Notes (Optional)</label>
+                      <textarea
+                        rows={2}
+                        value={studentComments}
+                        onChange={(e) => setStudentComments(e.target.value)}
+                        placeholder="Any notes for the examiner regarding your upload..."
+                        className="w-full text-xs bg-background border border-border rounded-lg p-2 text-foreground"
                       />
                     </div>
                     {uploadFile && (

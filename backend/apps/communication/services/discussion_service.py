@@ -11,6 +11,7 @@ class DiscussionService:
         "LISTENING",
         "SPEAKING",
         "HOMEWORK",
+        "TEACHER_QA",
         "ANNOUNCEMENTS"
     ]
 

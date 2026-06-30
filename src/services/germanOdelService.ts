@@ -1,4 +1,4 @@
-import api from "@/services/api";
+import { apiClient as api } from "@/services/api-client";
 
 export interface GermanLevel {
   id: number;

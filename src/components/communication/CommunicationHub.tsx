@@ -255,7 +255,7 @@ export const CommunicationHub: React.FC<CommunicationHubProps> = ({
       const stats = await communicationService.getAdminStats();
       setAdminStats(stats);
     } catch (e) {
-      setAdminStats({ messages_today: 142, unread_messages: 18, online_users: 24, ai_conversations: 39, storage_status: 'Active' });
+      setAdminStats({ messages_today: 0, unread_messages: 0, online_users: 0, ai_conversations: 0, storage_status: 'Database Unreachable' });
     }
   };
 
@@ -460,7 +460,7 @@ export const CommunicationHub: React.FC<CommunicationHubProps> = ({
                 <span className="px-1.5 py-0.2 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded text-[9px]">Live</span>
               </div>
               <div className="flex flex-wrap gap-1">
-                {['GENERAL', 'GRAMMAR', 'VOCABULARY', 'HOMEWORK'].map((chan) => (
+                {['GENERAL', 'GRAMMAR', 'VOCABULARY', 'HOMEWORK', 'TEACHER_QA'].map((chan) => (
                   <button
                     key={chan}
                     onClick={() => setActiveCourseChannel(chan)}
@@ -891,35 +891,74 @@ export const CommunicationHub: React.FC<CommunicationHubProps> = ({
       {/* Admin Dashboard Stats Modal */}
       {showAdminModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 max-w-lg w-full shadow-2xl">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 max-w-xl w-full shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-lg text-slate-900 dark:text-white flex items-center gap-2">
                 <Activity className="w-5 h-5 text-indigo-600" />
-                <span>Communication Admin Hub</span>
+                <span>Communication Admin Hub (Live PostgreSQL KPIs)</span>
               </h3>
               <button onClick={() => setShowAdminModal(false)}><X className="w-5 h-5 text-slate-400" /></button>
             </div>
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900">
-                <span className="text-xs text-blue-600 dark:text-blue-400 font-semibold uppercase">Messages Today</span>
-                <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{adminStats?.messages_today || 142}</p>
+            <div className="grid grid-cols-3 gap-3 mb-6">
+              <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900">
+                <span className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold uppercase block">Messages Today</span>
+                <p className="text-xl font-bold text-slate-900 dark:text-white mt-1">{adminStats?.messages_today ?? 0}</p>
               </div>
-              <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900">
-                <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold uppercase">Online Users</span>
-                <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{adminStats?.online_users || 24}</p>
+              <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-100 dark:border-rose-900">
+                <span className="text-[10px] text-rose-600 dark:text-rose-400 font-semibold uppercase block">Unread Messages</span>
+                <p className="text-xl font-bold text-slate-900 dark:text-white mt-1">{adminStats?.unread_messages ?? 0}</p>
               </div>
-              <div className="p-4 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-100 dark:border-purple-900">
-                <span className="text-xs text-purple-600 dark:text-purple-400 font-semibold uppercase">AI Queries</span>
-                <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{adminStats?.ai_conversations || 39}</p>
+              <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900">
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold uppercase block">Online Users</span>
+                <p className="text-xl font-bold text-slate-900 dark:text-white mt-1">{adminStats?.online_users ?? 0}</p>
               </div>
-              <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-100 dark:border-amber-900">
-                <span className="text-xs text-amber-600 dark:text-amber-400 font-semibold uppercase">Storage Status</span>
-                <p className="text-sm font-bold text-slate-900 dark:text-white mt-2 truncate">{adminStats?.storage_status || 'Supabase Active'}</p>
+              <div className="p-3 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900">
+                <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold uppercase block">Active Threads</span>
+                <p className="text-xl font-bold text-slate-900 dark:text-white mt-1">{adminStats?.active_conversations ?? 0}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-100 dark:border-purple-900">
+                <span className="text-[10px] text-purple-600 dark:text-purple-400 font-semibold uppercase block">AI Queries</span>
+                <p className="text-xl font-bold text-slate-900 dark:text-white mt-1">{adminStats?.ai_conversations ?? 0}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-100 dark:border-amber-900">
+                <span className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold uppercase block">Storage Usage</span>
+                <p className="text-sm font-bold text-slate-900 dark:text-white mt-1">
+                  {adminStats?.storage_bytes ? `${(adminStats.storage_bytes / (1024 * 1024)).toFixed(2)} MB` : '0.00 MB'}
+                </p>
               </div>
             </div>
+
+            {adminStats?.most_active_users && adminStats.most_active_users.length > 0 && (
+              <div className="mb-4">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Most Active Users</h4>
+                <div className="space-y-1 bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
+                  {adminStats.most_active_users.map((u: any, idx: number) => (
+                    <div key={idx} className="flex justify-between items-center text-xs">
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">{u.name} ({u.username})</span>
+                      <span className="px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-bold text-[10px]">{u.count} msgs</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {adminStats?.discussion_activity && adminStats.discussion_activity.length > 0 && (
+              <div className="mb-4">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Discussion Breakdown</h4>
+                <div className="grid grid-cols-3 gap-2">
+                  {adminStats.discussion_activity.map((da: any, idx: number) => (
+                    <div key={idx} className="p-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg text-center border border-slate-200 dark:border-slate-800">
+                      <span className="text-[10px] text-slate-500 block">{da.type}</span>
+                      <span className="font-bold text-sm text-slate-900 dark:text-white">{da.count}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs text-slate-600 dark:text-slate-300 flex items-center justify-between">
-              <span>Role Permission Policy Enforcement:</span>
-              <span className="font-bold text-emerald-600">Active (SuperAdmin Controlled)</span>
+              <span>Storage Status:</span>
+              <span className="font-bold text-emerald-600 dark:text-emerald-400">{adminStats?.storage_status || 'Supabase Active'}</span>
             </div>
           </div>
         </div>
@@ -1015,6 +1054,7 @@ export const CommunicationHub: React.FC<CommunicationHubProps> = ({
                   <option value="GRAMMAR">#GRAMMAR</option>
                   <option value="VOCABULARY">#VOCABULARY</option>
                   <option value="HOMEWORK">#HOMEWORK</option>
+                  <option value="TEACHER_QA">#TEACHER_QA</option>
                 </select>
               </div>
             )}
@@ -1027,6 +1067,7 @@ export const CommunicationHub: React.FC<CommunicationHubProps> = ({
             </button>
           </div>
         </div>
+      )}
       {showGlobalSearchModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start justify-center z-50 p-4 pt-20">
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 max-w-2xl w-full shadow-2xl flex flex-col max-h-[80vh]">

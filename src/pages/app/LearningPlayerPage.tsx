@@ -1,6 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { PlayCircle, Lock, CheckCircle2, Video, Headphones, FileText, Presentation, Globe, Download, ChevronRight, BookOpen, AlertCircle } from "lucide-react";
+import { PlayCircle, Lock, CheckCircle2, Video, Headphones, FileText, Presentation, Globe, Download, ChevronRight, BookOpen, AlertCircle, Edit3, Trash2, Plus, Share2, Clock, ExternalLink } from "lucide-react";
 import { apiClient as api } from "@/services";
+
+interface Resource {
+  id: number;
+  title: string;
+  file?: string;
+  external_url?: string;
+  file_type: string;
+  file_size_bytes?: number;
+  is_downloadable?: boolean;
+}
 
 interface Lesson {
   id: number;
@@ -11,6 +21,7 @@ interface Lesson {
   body_html: string;
   duration_seconds: number;
   is_unlocked: boolean;
+  resources?: Resource[];
 }
 
 interface Module {
@@ -20,6 +31,15 @@ interface Module {
   lessons: Lesson[];
 }
 
+interface Note {
+  id: number;
+  note_type: string;
+  content: string;
+  selected_text: string;
+  timestamp_seconds: number;
+  created_at: string;
+}
+
 export default function LearningPlayerPage() {
   const [modules, setModules] = useState<Module[]>([]);
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
@@ -27,9 +47,39 @@ export default function LearningPlayerPage() {
   const [completing, setCompleting] = useState(false);
   const [completedIds, setCompletedIds] = useState<number[]>([]);
 
+  // Notes drawer state
+  const [isNotesOpen, setIsNotesOpen] = useState(false);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [newNoteContent, setNewNoteContent] = useState("");
+  const [newNoteType, setNewNoteType] = useState("GENERAL");
+  const [noteLoading, setNoteLoading] = useState(false);
+
+  // Virtual session countdown state
+  const [countdownText, setCountdownText] = useState<string | null>(null);
+
   useEffect(() => {
     fetchCourseData();
+    // Simulated countdown ticker for next live session
+    const interval = setInterval(() => {
+      const target = new Date().getTime() + 1000 * 60 * 45; // 45 mins remaining demo
+      const now = new Date().getTime();
+      const diff = target - now;
+      if (diff > 0) {
+        const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const secs = Math.floor((diff % (1000 * 60)) / 1000);
+        setCountdownText(`${mins}m ${secs}s via Zoom Enterprise`);
+      } else {
+        setCountdownText("LIVE JETZT");
+      }
+    }, 1000);
+    return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (activeLesson) {
+      fetchNotes(activeLesson.id);
+    }
+  }, [activeLesson]);
 
   const fetchCourseData = async () => {
     try {
@@ -38,7 +88,6 @@ export default function LearningPlayerPage() {
       const mods: Module[] = res.data.results || res.data || [];
       setModules(mods);
 
-      // Select first unlocked lesson
       for (const m of mods) {
         if (m.lessons && m.lessons.length > 0) {
           setActiveLesson(m.lessons[0]);
@@ -50,6 +99,48 @@ export default function LearningPlayerPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchNotes = async (lessonId: number) => {
+    try {
+      const res = await api.get(`/odel/lesson-notes/?lesson=${lessonId}`);
+      setNotes(res.data.results || res.data || []);
+    } catch (err) {
+      console.error("Failed to fetch lesson notes:", err);
+    }
+  };
+
+  const handleAddNote = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newNoteContent.trim() || !activeLesson) return;
+    try {
+      setNoteLoading(true);
+      const res = await api.post("/odel/lesson-notes/", {
+        lesson: activeLesson.id,
+        note_type: newNoteType,
+        content: newNoteContent,
+        timestamp_seconds: 0
+      });
+      setNotes((prev) => [res.data, ...prev]);
+      setNewNoteContent("");
+    } catch (err) {
+      console.error("Failed to save study note:", err);
+    } finally {
+      setNoteLoading(false);
+    }
+  };
+
+  const handleDeleteNote = async (id: number) => {
+    try {
+      await api.delete(`/odel/lesson-notes/${id}/`);
+      setNotes((prev) => prev.filter((n) => n.id !== id));
+    } catch (err) {
+      console.error("Failed to delete note:", err);
+    }
+  };
+
+  const handleExportNotes = (format: string) => {
+    window.open(`/api/odel/lesson-notes/export/?format=${format}`, "_blank");
   };
 
   const handleLessonSelect = (lesson: Lesson) => {
@@ -70,7 +161,6 @@ export default function LearningPlayerPage() {
       });
       setCompletedIds((prev) => [...prev, activeLesson.id]);
       
-      // Update local unlock status for dependent lessons
       setModules((prevMods) =>
         prevMods.map((mod) => ({
           ...mod,
@@ -181,12 +271,14 @@ export default function LearningPlayerPage() {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 min-h-[80vh] animate-fadeIn">
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 min-h-[80vh] relative animate-fadeIn">
       {/* Course Navigation Sidebar */}
       <div className="lg:col-span-1 bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-2xl p-5 shadow-2xl flex flex-col h-full max-h-[85vh] overflow-hidden">
-        <div className="pb-4 border-b border-slate-800">
-          <span className="text-xs font-mono font-bold text-purple-400 uppercase tracking-wider">ODEL-DEUTSCH-B2</span>
-          <h2 className="text-lg font-extrabold text-white mt-1">Kurs-Curriculum</h2>
+        <div className="pb-4 border-b border-slate-800 flex items-center justify-between">
+          <div>
+            <span className="text-xs font-mono font-bold text-purple-400 uppercase tracking-wider">ODEL-DEUTSCH-B2</span>
+            <h2 className="text-lg font-extrabold text-white mt-1">Kurs-Curriculum</h2>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto mt-4 space-y-6 pr-1 custom-scrollbar">
@@ -238,6 +330,19 @@ export default function LearningPlayerPage() {
       {/* Main Learning Player Area */}
       <div className="lg:col-span-3 flex flex-col justify-between space-y-6">
         <div>
+          {/* Live Virtual Class Banner */}
+          {countdownText && (
+            <div className="bg-gradient-to-r from-purple-900/60 via-indigo-900/60 to-purple-900/60 border border-purple-500/30 rounded-xl px-5 py-3 flex items-center justify-between mb-4 shadow-lg animate-pulse">
+              <div className="flex items-center gap-2.5 text-sm font-semibold text-purple-200">
+                <Clock className="w-4 h-4 text-amber-400" />
+                <span>⏰ Nächste Live-Vorlesung in: <strong className="text-white font-mono">{countdownText}</strong></span>
+              </div>
+              <span className="text-xs px-2.5 py-1 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 font-mono">
+                Mandatory Attendance
+              </span>
+            </div>
+          )}
+
           {activeLesson ? (
             <div className="space-y-6">
               <div className="flex items-center justify-between bg-slate-900/60 border border-slate-800/80 px-6 py-4 rounded-2xl backdrop-blur-md">
@@ -245,12 +350,47 @@ export default function LearningPlayerPage() {
                   <span className="text-xs font-medium text-purple-400">Aktuelle Lektion</span>
                   <h1 className="text-2xl font-bold text-white mt-0.5">{activeLesson.title}</h1>
                 </div>
-                <span className="px-3 py-1 rounded-lg bg-slate-800 text-slate-300 font-mono text-xs border border-slate-700">
-                  {activeLesson.media_type}
-                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setIsNotesOpen(!isNotesOpen)}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 text-xs font-bold transition-all"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    <span>Notizen ({notes.length})</span>
+                  </button>
+                  <span className="px-3 py-1 rounded-lg bg-slate-800 text-slate-300 font-mono text-xs border border-slate-700">
+                    {activeLesson.media_type}
+                  </span>
+                </div>
               </div>
 
               {renderMediaContent()}
+
+              {/* Lesson Resources List */}
+              {activeLesson.resources && activeLesson.resources.length > 0 && (
+                <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2 mb-3">
+                    <FileText className="w-4 h-4 text-purple-400" /> Begleitmaterialien & Downloads
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {activeLesson.resources.map((res) => (
+                      <a
+                        key={res.id}
+                        href={res.file || res.external_url || "#"}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center justify-between p-3 rounded-xl bg-slate-950/60 border border-slate-800 hover:border-purple-500/40 text-slate-300 hover:text-white transition-all group"
+                      >
+                        <div className="flex items-center gap-2.5 truncate">
+                          <Download className="w-4 h-4 text-purple-400 group-hover:text-purple-300 shrink-0" />
+                          <span className="text-xs font-medium truncate">{res.title}</span>
+                        </div>
+                        <ExternalLink className="w-3.5 h-3.5 text-slate-500 group-hover:text-slate-300 shrink-0" />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center p-16 rounded-2xl border border-slate-800 bg-slate-900/50 text-center">
@@ -266,7 +406,7 @@ export default function LearningPlayerPage() {
           <div className="sticky bottom-4 z-20 flex items-center justify-between bg-slate-900/90 backdrop-blur-xl border border-slate-800 p-6 rounded-2xl shadow-2xl">
             <div className="flex items-center gap-3 text-sm text-slate-300">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
-              <span>Lernfortschritt wird aufgezeichnet</span>
+              <span>Lernfortschritt wird synchronisiert</span>
             </div>
             <button
               disabled={completing || completedIds.includes(activeLesson.id)}
@@ -289,6 +429,89 @@ export default function LearningPlayerPage() {
           </div>
         )}
       </div>
+
+      {/* Slide-over Notes Drawer */}
+      {isNotesOpen && (
+        <div className="fixed inset-y-0 right-0 w-96 bg-slate-900 border-l border-slate-800 shadow-2xl z-50 p-6 flex flex-col justify-between animate-slideLeft">
+          <div className="flex-1 overflow-y-auto space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Edit3 className="w-4 h-4 text-amber-400" /> Meine Notizen
+              </h3>
+              <div className="flex gap-1.5">
+                <button
+                  onClick={() => handleExportNotes("markdown")}
+                  className="px-2.5 py-1 rounded bg-slate-800 text-slate-300 hover:text-white text-xs border border-slate-700 font-mono"
+                  title="Export Markdown"
+                >
+                  MD Export
+                </button>
+                <button
+                  onClick={() => setIsNotesOpen(false)}
+                  className="text-slate-400 hover:text-white text-sm font-bold px-2"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Create Note Form */}
+            <form onSubmit={handleAddNote} className="space-y-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
+              <div className="flex gap-1.5">
+                {["GENERAL", "QUESTION", "BOOKMARK", "EXAM_PREP"].map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setNewNoteType(t)}
+                    className={`px-2 py-1 rounded text-[10px] font-bold border ${
+                      newNoteType === t
+                        ? "bg-amber-500/20 border-amber-500 text-amber-400"
+                        : "bg-slate-900 border-slate-800 text-slate-400"
+                    }`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+              <textarea
+                value={newNoteContent}
+                onChange={(e) => setNewNoteContent(e.target.value)}
+                placeholder="Notiz zu dieser Lektion verfassen..."
+                className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-amber-500 min-h-[70px]"
+              />
+              <button
+                type="submit"
+                disabled={noteLoading}
+                className="w-full py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition-colors flex items-center justify-center gap-1.5"
+              >
+                <Plus className="w-3.5 h-3.5" /> Notiz speichern
+              </button>
+            </form>
+
+            {/* Notes List */}
+            <div className="space-y-2 pt-2">
+              {notes.map((n) => (
+                <div key={n.id} className="bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs space-y-1.5 relative group">
+                  <div className="flex items-center justify-between text-[10px] text-slate-500 font-mono">
+                    <span className="px-2 py-0.5 rounded bg-slate-900 text-amber-400 font-bold">{n.note_type}</span>
+                    <span>{new Date(n.created_at).toLocaleDateString()}</span>
+                  </div>
+                  <p className="text-slate-300 leading-relaxed whitespace-pre-wrap">{n.content}</p>
+                  <button
+                    onClick={() => handleDeleteNote(n.id)}
+                    className="absolute top-2 right-2 text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+              {notes.length === 0 && (
+                <div className="text-center py-8 text-slate-500 text-xs">Keine Notizen vorhanden.</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

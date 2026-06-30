@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import AISetting, KnowledgeDocument, AIRequestLog
+from .models import AISetting, KnowledgeDocument, AIRequestLog, KnowledgeIndexingJob, AIConversationSession
 
 @admin.register(AISetting)
 class AISettingAdmin(admin.ModelAdmin):
@@ -12,9 +12,21 @@ class AISettingAdmin(admin.ModelAdmin):
 
 @admin.register(KnowledgeDocument)
 class KnowledgeDocumentAdmin(admin.ModelAdmin):
-    list_display = ('title', 'category', 'is_active', 'updated_at')
-    list_filter = ('category', 'is_active')
+    list_display = ('title', 'category', 'indexing_status', 'is_active', 'updated_at')
+    list_filter = ('category', 'indexing_status', 'is_active')
     search_fields = ('title', 'content')
+
+@admin.register(KnowledgeIndexingJob)
+class KnowledgeIndexingJobAdmin(admin.ModelAdmin):
+    list_display = ('id', 'source_name', 'source_type', 'status', 'retry_count', 'started_at')
+    list_filter = ('status', 'source_type')
+    search_fields = ('source_name', 'error_log')
+
+@admin.register(AIConversationSession)
+class AIConversationSessionAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'title', 'is_deleted', 'updated_at')
+    list_filter = ('is_deleted',)
+    search_fields = ('title', 'user__username')
 
 @admin.register(AIRequestLog)
 class AIRequestLogAdmin(admin.ModelAdmin):

@@ -212,7 +212,8 @@ class BroadcastMessageViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
-        serializer.save(sent_by=self.request.user)
+        count = User.objects.filter(is_active=True).count()
+        serializer.save(sent_by=self.request.user, recipient_count=count)
 
 
 class PushNotificationTokenViewSet(viewsets.ModelViewSet):
@@ -278,16 +279,42 @@ class AdminDashboardStatsViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAdminUser]
 
     def list(self, request):
+        from django.db.models import Sum, Count
         today = timezone.now().date()
         msgs_today = PrivateMessage.objects.filter(created_at__date=today).count()
         unread_msgs = PrivateMessage.objects.filter(is_read=False).count()
+        active_convs = Conversation.objects.filter(is_archived=False).count()
+        announcements_count = Announcement.objects.count()
+        broadcasts_count = BroadcastMessage.objects.count()
+
+        storage_bytes = PrivateMessage.objects.aggregate(total=Sum('attachment_size'))['total'] or 0
+
         online_users = UserCommunicationProfile.objects.filter(presence_status='ONLINE').count()
         ai_requests = CommunicationAuditLog.objects.filter(action='AI_REQUEST').count()
+
+        top_users = User.objects.annotate(msg_count=Count('sent_messages')).order_by('-msg_count')[:5]
+        most_active_users = [{
+            'username': u.username,
+            'name': f"{u.first_name} {u.last_name}".strip() or u.username,
+            'count': u.msg_count
+        } for u in top_users]
+
+        discussion_activity = [
+            {'type': 'Course Discussions', 'count': Conversation.objects.filter(type=Conversation.Type.COURSE).count()},
+            {'type': 'Group Threads', 'count': Conversation.objects.filter(type=Conversation.Type.GROUP).count()},
+            {'type': 'Direct Chats', 'count': Conversation.objects.filter(type=Conversation.Type.DIRECT).count()},
+        ]
 
         return Response({
             'messages_today': msgs_today,
             'unread_messages': unread_msgs,
+            'active_conversations': active_convs,
+            'announcements': announcements_count,
+            'broadcasts': broadcasts_count,
+            'storage_bytes': storage_bytes,
             'online_users': online_users,
             'ai_conversations': ai_requests,
             'storage_status': 'Supabase CDN Bucket Active (Healthy)',
+            'most_active_users': most_active_users,
+            'discussion_activity': discussion_activity
         })

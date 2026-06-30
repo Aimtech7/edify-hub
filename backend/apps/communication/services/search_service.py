@@ -1,6 +1,6 @@
 from django.db.models import Q
 from django.contrib.auth import get_user_model
-from ..models import PrivateMessage, Announcement, UserCommunicationProfile
+from ..models import PrivateMessage, Announcement, UserCommunicationProfile, Conversation
 from dms.models import DocumentMetadata
 
 User = get_user_model()
@@ -61,34 +61,48 @@ class SearchService:
     def global_search(cls, user, query="", category="ALL"):
         q = query.strip()
         if not q:
-            return {'users': [], 'messages': [], 'announcements': [], 'documents': []}
+            return {'users': [], 'conversations': [], 'messages': [], 'announcements': [], 'documents': []}
 
-        output = {'users': [], 'messages': [], 'announcements': [], 'documents': []}
+        output = {'users': [], 'conversations': [], 'messages': [], 'announcements': [], 'documents': []}
 
         if category in ["ALL", "USERS"]:
-            output['users'] = cls.search_users(q)[:10]
+            output['users'] = cls.search_users(q)[:15]
+
+        if category in ["ALL", "CONVERSATIONS"]:
+            user_convs = user.conversations.all() if user.role not in ['ADMIN', 'STAFF'] else Conversation.objects.all()
+            convs = user_convs.filter(
+                Q(subject__icontains=q) | Q(course_channel__icontains=q)
+            ).distinct()[:15]
+            output['conversations'] = [{
+                'id': c.pk,
+                'subject': c.subject or f"Conversation #{c.id}",
+                'type': c.type,
+                'course_channel': c.course_channel,
+                'updated_at': c.updated_at.isoformat() if c.updated_at else ""
+            } for c in convs]
 
         if category in ["ALL", "MESSAGES"]:
-            # Only search messages in conversations the user is a participant of
             msgs = PrivateMessage.objects.filter(
                 conversation__participants=user,
-                is_deleted=False,
-                content__icontains=q
-            ).select_related('sender', 'conversation')[:20]
+                is_deleted=False
+            ).filter(
+                Q(content__icontains=q) | Q(attachment_name__icontains=q)
+            ).select_related('sender', 'conversation').distinct()[:25]
             
             output['messages'] = [{
                 'id': m.pk,
                 'conversation_id': m.conversation_id,
                 'conversation_subject': m.conversation.subject or str(m.conversation.type),
                 'sender': m.sender.username,
-                'content': m.content[:200],
+                'content': m.content[:200] or (f"[File: {m.attachment_name}]" if m.attachment_name else ""),
+                'attachment_name': m.attachment_name,
                 'created_at': m.created_at.isoformat()
             } for m in msgs]
 
         if category in ["ALL", "ANNOUNCEMENTS"]:
             anns = Announcement.objects.filter(
                 Q(title__icontains=q) | Q(content__icontains=q)
-            )[:15]
+            ).distinct()[:15]
             output['announcements'] = [{
                 'id': a.pk,
                 'title': a.title,
@@ -99,7 +113,7 @@ class SearchService:
         if category in ["ALL", "DOCUMENTS"]:
             docs = DocumentMetadata.objects.filter(
                 Q(title__icontains=q) | Q(description__icontains=q) | Q(keywords__icontains=q)
-            )[:15]
+            ).distinct()[:15]
             output['documents'] = [{
                 'id': d.pk,
                 'title': d.title,

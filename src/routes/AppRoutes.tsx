@@ -46,6 +46,7 @@ import AdmissionsQueuePage from "@/pages/app/AdmissionsQueuePage";
 import LessonResourcesPage from "@/pages/dms/LessonResourcesPage";
 import KnowledgeBasePage from "@/pages/dms/KnowledgeBasePage";
 import StorageDashboardPage from "@/pages/dms/StorageDashboardPage";
+import AIAdministrationPage from "@/pages/ai/AIAdministrationPage";
 import { SecureExamsPage } from "@/pages/app/SecureExamsPage";
 import { ExamManagementPage } from "@/pages/app/ExamManagementPage";
 import AutomationEnginePage from "@/pages/app/AutomationEnginePage";
@@ -300,6 +301,14 @@ export default function AppRoutes() {
           element={
             <RoleProtectedRoute allowed={["admin"]}>
               <StorageDashboardPage />
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
+          path="ai-management"
+          element={
+            <RoleProtectedRoute allowed={["admin", "teacher"]}>
+              <AIAdministrationPage />
             </RoleProtectedRoute>
           }
         />

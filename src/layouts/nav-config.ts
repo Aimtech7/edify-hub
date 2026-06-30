@@ -133,6 +133,7 @@ export const NAV: Record<Role, NavGroup[]> = {
       label: "DMS & AI Knowledge",
       items: [
         { to: "/app/storage-dashboard", label: "Storage Telemetry", icon: Layers3 },
+        { to: "/app/ai-management", label: "AI & RAG Telemetry", icon: Layers3 },
         { to: "/app/lesson-resources", label: "Lesson Resources", icon: BookOpen },
         { to: "/app/knowledge-base", label: "Knowledge Base", icon: ScrollText },
       ],

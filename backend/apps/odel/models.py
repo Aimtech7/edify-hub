@@ -91,6 +91,16 @@ class Lesson(models.Model):
     min_time_seconds = models.PositiveIntegerField(default=0)
     prerequisite = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='dependent_lessons')
     virtual_class = models.ForeignKey(VirtualClass, on_delete=models.SET_NULL, null=True, blank=True, related_name='linked_lessons')
+    description = models.TextField(blank=True, help_text="Summary description of lesson")
+    objectives = models.TextField(blank=True, help_text="Learning objectives or outcomes")
+    teacher = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='authored_lessons')
+    status = models.CharField(
+        max_length=20,
+        choices=[('DRAFT', 'Draft'), ('PUBLISHED', 'Published'), ('ARCHIVED', 'Archived')],
+        default='PUBLISHED'
+    )
+    release_date = models.DateTimeField(null=True, blank=True)
+    expiry_date = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ['order']
@@ -115,6 +125,16 @@ class Resource(models.Model):
     title = models.CharField(max_length=200)
     file = models.FileField(upload_to='odel/resources/')
     is_downloadable = models.BooleanField(default=True)
+    file_type = models.CharField(max_length=50, blank=True, help_text="Extension e.g. pdf, docx, mp4")
+    mime_type = models.CharField(max_length=100, blank=True, help_text="MIME type e.g. application/pdf")
+    file_size_bytes = models.PositiveIntegerField(default=0)
+    checksum = models.CharField(max_length=64, blank=True, help_text="SHA-256 hash for deduplication")
+    virus_scan_status = models.CharField(
+        max_length=20,
+        choices=[('PENDING', 'Pending Scan'), ('CLEAN', 'Clean'), ('INFECTED', 'Infected')],
+        default='CLEAN'
+    )
+    external_url = models.URLField(blank=True)
 
     def __str__(self):
         return f"{self.title} ({self.lesson.title})"
@@ -134,12 +154,38 @@ class StudentLessonProgress(models.Model):
     download_count = models.PositiveIntegerField(default=0)
     resume_position_seconds = models.PositiveIntegerField(default=0)
     is_bookmarked = models.BooleanField(default=False)
+    opened_at = models.DateTimeField(null=True, blank=True)
+    pages_viewed = models.PositiveIntegerField(default=0)
+    notes_count = models.PositiveIntegerField(default=0)
 
     class Meta:
         unique_together = ['student', 'lesson']
 
     def __str__(self):
         return f"{self.student.admission_number} - {self.lesson.title} ({self.progress_percentage}%)"
+
+
+class StudentLessonNote(models.Model):
+    class NoteType(models.TextChoices):
+        NOTE = 'NOTE', 'Personal Note'
+        HIGHLIGHT = 'HIGHLIGHT', 'Text Highlight'
+        BOOKMARK = 'BOOKMARK', 'Timestamp Bookmark'
+
+    student = models.ForeignKey('students.Student', on_delete=models.CASCADE, related_name='lesson_notes')
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name='student_notes')
+    note_type = models.CharField(max_length=20, choices=NoteType.choices, default=NoteType.NOTE)
+    content = models.TextField(blank=True, help_text="Text content of the note or comment")
+    selected_text = models.TextField(blank=True, help_text="Highlighted excerpt from lesson body")
+    timestamp_seconds = models.PositiveIntegerField(default=0, help_text="Media playback position in seconds")
+    is_private = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Note by {self.student.admission_number} on {self.lesson.title}"
 
 
 # Enterprise Extensions (Milestone 1.2)
@@ -315,6 +361,12 @@ class OfficialExamination(models.Model):
         MIDTERM = "MIDTERM", "Midterm Examination"
         FINAL = "FINAL", "Final Semester Examination"
         PLACEMENT = "PLACEMENT", "Placement Test"
+        CAT = "CAT", "Continuous Assessment Test (CAT)"
+        ORAL = "ORAL", "Oral Examination"
+        LISTENING = "LISTENING", "Listening Assessment"
+        SPEAKING = "SPEAKING", "Speaking Assessment"
+        READING = "READING", "Reading Assessment"
+        WRITING = "WRITING", "Writing Assessment"
         CUSTOM = "CUSTOM", "Custom Assessment"
 
     class PublishStatus(models.TextChoices):
@@ -328,6 +380,7 @@ class OfficialExamination(models.Model):
         REJECT = "REJECT", "Reject Late Submission"
 
     title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
     exam_code = models.CharField(max_length=100, unique=True)
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='official_exams', null=True, blank=True)
     level = models.ForeignKey(Level, on_delete=models.CASCADE, related_name='official_exams')
@@ -355,9 +408,14 @@ class OfficialExamination(models.Model):
     publish_status = models.CharField(max_length=20, choices=PublishStatus.choices, default=PublishStatus.DRAFT)
 
     exam_paper_pdf = models.FileField(upload_to='odel/formal_exams/', null=True, blank=True)
+    supporting_files = models.FileField(upload_to='odel/supporting_files/', null=True, blank=True)
     marking_rubric = models.FileField(upload_to='odel/rubrics/', null=True, blank=True)
-    eligible_students = models.ManyToManyField('students.Student', blank=True, related_name='assigned_official_exams')
+    checksum = models.CharField(max_length=64, blank=True, help_text="SHA-256 Checksum of the examination file")
+    file_size_bytes = models.PositiveIntegerField(default=0)
+    mime_type = models.CharField(max_length=100, blank=True, default="application/pdf")
 
+    eligible_students = models.ManyToManyField('students.Student', blank=True, related_name='assigned_official_exams')
+    teacher = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='allocated_official_exams')
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='created_formal_exams')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -403,6 +461,11 @@ class ExamSubmission(models.Model):
         GRADED = "GRADED", "Graded"
         PUBLISHED = "PUBLISHED", "Results Published"
 
+    class ModerationStatus(models.TextChoices):
+        PENDING = "PENDING", "Pending Moderation"
+        APPROVED = "APPROVED", "Approved by Moderator"
+        RETURNED = "RETURNED", "Returned for Correction"
+
     examination = models.ForeignKey(OfficialExamination, on_delete=models.CASCADE, related_name='submissions')
     student = models.ForeignKey('students.Student', on_delete=models.CASCADE, related_name='formal_exam_submissions')
     receipt_number = models.CharField(max_length=100, unique=True, editable=False)
@@ -411,6 +474,7 @@ class ExamSubmission(models.Model):
     uploaded_file = models.FileField(upload_to='odel/formal_submissions/')
     file_type = models.CharField(max_length=50, blank=True)
     file_size_bytes = models.PositiveIntegerField(default=0)
+    student_comments = models.TextField(blank=True)
     submitted_at = models.DateTimeField(auto_now_add=True)
     is_late = models.BooleanField(default=False)
 
@@ -422,6 +486,11 @@ class ExamSubmission(models.Model):
     graded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='graded_exam_submissions')
     graded_at = models.DateTimeField(null=True, blank=True)
     published_at = models.DateTimeField(null=True, blank=True)
+
+    moderation_status = models.CharField(max_length=20, choices=ModerationStatus.choices, default=ModerationStatus.PENDING)
+    moderated_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='moderated_submissions')
+    moderator_notes = models.TextField(blank=True)
+    moderated_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         unique_together = ['examination', 'student', 'attempt_number']

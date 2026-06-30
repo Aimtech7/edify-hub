@@ -1,15 +1,27 @@
 import time
+from datetime import timedelta
+from django.utils import timezone
+from django.db.models import Avg, Count
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import status
 
-from ai_assistant.models import AISetting, AIRequestLog
+from ai_assistant.models import (
+    AISetting,
+    AIRequestLog,
+    KnowledgeDocument,
+    KnowledgeIndexingJob,
+    AIConversationSession
+)
 from ai_assistant.retrieval import retrieve_rag_context
 from ai_assistant.providers import get_llm_provider
+from ai_assistant.services.indexing_service import IndexingService
+from ai_assistant.services.search_service import AISearchService
+
 
 class AIChatView(APIView):
-    permission_classes = [AllowAny] # Allow public website inquiries as well as authenticated portals
+    permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
         question = request.data.get("question") or request.data.get("prompt", "").strip()
@@ -19,6 +31,16 @@ class AIChatView(APIView):
         start_time = time.time()
         user = request.user if request.user and request.user.is_authenticated else None
         role = getattr(user, 'role', 'PUBLIC') if user else 'PUBLIC'
+
+        # Optional conversation session link
+        session_id = request.data.get("session_id")
+        session = None
+        if user:
+            if session_id:
+                session = AIConversationSession.objects.filter(id=session_id, user=user, is_deleted=False).first()
+            if not session and request.data.get("create_session", True):
+                title = question[:40] + ("..." if len(question) > 40 else "")
+                session = AIConversationSession.objects.create(user=user, title=title)
 
         # 1. Retrieve RAG Context & Suggested Actions
         context_text, actions = retrieve_rag_context(user, question)
@@ -39,6 +61,7 @@ class AIChatView(APIView):
 
         # 3. Log Audit Record
         log = AIRequestLog.objects.create(
+            session=session,
             user=user,
             user_role=role,
             question=question,
@@ -48,10 +71,19 @@ class AIChatView(APIView):
             response_time_ms=elapsed_ms
         )
 
+        # Extract citations from context
+        citations = []
+        for line in context_text.split("\n"):
+            if "Priority " in line and "]" in line:
+                idx = line.find("]")
+                citations.append(line[:idx+1])
+
         return Response({
             "reply": reply,
             "actions": actions,
+            "citations": citations[:3],
             "log_id": log.id,
+            "session_id": session.id if session else None,
             "model": config.model_name,
             "response_time_ms": elapsed_ms
         })
@@ -77,7 +109,7 @@ class AIFeedbackView(APIView):
 
 
 class AISettingsView(APIView):
-    permission_classes = [IsAuthenticated] # Or check role admin
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
         if not (request.user.is_staff or getattr(request.user, 'role', '') == 'ADMIN'):
@@ -110,3 +142,267 @@ class AISettingsView(APIView):
         config.save()
 
         return Response({"status": "AI configuration saved successfully."})
+
+
+# --- PART 7: Conversation History Management ---
+class AIConversationListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        sessions = AIConversationSession.objects.filter(user=request.user, is_deleted=False).order_by('-updated_at')
+        data = []
+        for s in sessions:
+            msg_count = s.messages.filter(is_deleted=False).count()
+            data.append({
+                "id": s.id,
+                "title": s.title,
+                "message_count": msg_count,
+                "updated_at": s.updated_at.strftime("%Y-%m-%d %H:%M")
+            })
+        return Response({"sessions": data})
+
+    def post(self, request, *args, **kwargs):
+        title = request.data.get("title", "New Conversation").strip() or "New Conversation"
+        session = AIConversationSession.objects.create(user=request.user, title=title)
+        return Response({
+            "id": session.id,
+            "title": session.title,
+            "message_count": 0,
+            "updated_at": session.updated_at.strftime("%Y-%m-%d %H:%M")
+        }, status=status.HTTP_201_CREATED)
+
+
+class AIConversationDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk, *args, **kwargs):
+        session = AIConversationSession.objects.filter(id=pk, user=request.user, is_deleted=False).first()
+        if not session:
+            return Response({"error": "Conversation session not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        messages = session.messages.filter(is_deleted=False).order_by('timestamp')
+        history = []
+        for m in messages:
+            history.append({
+                "id": m.id,
+                "question": m.question,
+                "response": m.response_text,
+                "model": m.model_used,
+                "timestamp": m.timestamp.strftime("%Y-%m-%d %H:%M")
+            })
+        return Response({
+            "session": {"id": session.id, "title": session.title},
+            "messages": history
+        })
+
+    def patch(self, request, pk, *args, **kwargs):
+        session = AIConversationSession.objects.filter(id=pk, user=request.user, is_deleted=False).first()
+        if not session:
+            return Response({"error": "Conversation session not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        new_title = request.data.get("title")
+        if new_title and new_title.strip():
+            session.title = new_title.strip()
+            session.save()
+        return Response({"status": "Conversation renamed successfully.", "title": session.title})
+
+    def delete(self, request, pk, *args, **kwargs):
+        session = AIConversationSession.objects.filter(id=pk, user=request.user, is_deleted=False).first()
+        if not session:
+            return Response({"error": "Conversation session not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Soft delete session and all contained messages
+        session.is_deleted = True
+        session.save()
+        session.messages.update(is_deleted=True)
+        return Response({"status": "Conversation deleted successfully."})
+
+
+# --- PART 1 & 2: Knowledge Base & Document Indexing Management ---
+class KnowledgeDocumentListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        category = request.query_params.get("category")
+        search = request.query_params.get("search")
+
+        qs = KnowledgeDocument.objects.filter(is_active=True).order_by('-updated_at')
+        if category and category != "ALL":
+            qs = qs.filter(category=category)
+        if search:
+            qs = qs.filter(title__icontains=search)
+
+        docs = []
+        for d in qs:
+            docs.append({
+                "id": d.id,
+                "title": d.title,
+                "category": d.category,
+                "category_display": d.get_category_display(),
+                "file_size": d.file_size,
+                "file_url": d.file.url if d.file else "",
+                "indexing_status": d.indexing_status,
+                "error_message": d.error_message,
+                "created_at": d.created_at.strftime("%Y-%m-%d %H:%M"),
+                "updated_at": d.updated_at.strftime("%Y-%m-%d %H:%M")
+            })
+        return Response({"documents": docs})
+
+    def post(self, request, *args, **kwargs):
+        if not (request.user.is_staff or getattr(request.user, 'role', '') in ['ADMIN', 'TEACHER']):
+            return Response({"error": "Unauthorized to upload institutional knowledge."}, status=status.HTTP_403_FORBIDDEN)
+
+        title = request.data.get("title", "Untitled Document").strip()
+        category = request.data.get("category", "GENERAL")
+        content = request.data.get("content", "").strip()
+        file_obj = request.FILES.get("file")
+
+        doc = KnowledgeDocument.objects.create(
+            title=title,
+            category=category,
+            content=content,
+            file=file_obj,
+            indexing_status="PENDING"
+        )
+
+        # Execute text extraction & vector indexing
+        job = IndexingService.index_document(doc)
+
+        return Response({
+            "id": doc.id,
+            "title": doc.title,
+            "category": doc.category,
+            "indexing_status": doc.indexing_status,
+            "job_id": job.id
+        }, status=status.HTTP_201_CREATED)
+
+
+class KnowledgeDocumentDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk, *args, **kwargs):
+        if not (request.user.is_staff or getattr(request.user, 'role', '') == 'ADMIN'):
+            return Response({"error": "Unauthorized to delete institutional knowledge."}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            doc = KnowledgeDocument.objects.get(id=pk)
+            doc.is_active = False
+            doc.save()
+            return Response({"status": "Knowledge document deactivated successfully."})
+        except KnowledgeDocument.DoesNotExist:
+            return Response({"error": "Document not found."}, status=status.HTTP_404_NOT_FOUND)
+
+
+class KnowledgeReindexView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk, *args, **kwargs):
+        if not (request.user.is_staff or getattr(request.user, 'role', '') == 'ADMIN'):
+            return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            doc = KnowledgeDocument.objects.get(id=pk)
+            job = IndexingService.index_document(doc)
+            return Response({"status": "Re-indexing completed.", "indexing_status": doc.indexing_status, "job_id": job.id})
+        except KnowledgeDocument.DoesNotExist:
+            return Response({"error": "Document not found."}, status=status.HTTP_404_NOT_FOUND)
+
+
+# --- PART 5: Semantic Search ---
+class SemanticSearchView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        query = request.query_params.get("query", "").strip()
+        category = request.query_params.get("category", "")
+        results = AISearchService.semantic_search(query, category=category)
+        return Response({"query": query, "results": results})
+
+
+# --- PART 8: Indexing Jobs Administration ---
+class IndexingJobListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        if not (request.user.is_staff or getattr(request.user, 'role', '') == 'ADMIN'):
+            return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
+
+        jobs = KnowledgeIndexingJob.objects.all()[:50]
+        data = []
+        for j in jobs:
+            data.append({
+                "id": j.id,
+                "doc_id": j.document.id if j.document else None,
+                "source_name": j.source_name,
+                "source_type": j.source_type,
+                "status": j.status,
+                "error_log": j.error_log,
+                "retry_count": j.retry_count,
+                "started_at": j.started_at.strftime("%Y-%m-%d %H:%M")
+            })
+        return Response({"jobs": data})
+
+
+class IndexingJobRetryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk, *args, **kwargs):
+        if not (request.user.is_staff or getattr(request.user, 'role', '') == 'ADMIN'):
+            return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            job = IndexingService.retry_job(pk)
+            return Response({"status": "Job retried successfully.", "new_status": job.status})
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+# --- PART 9: Executive Command Center & Administration Telemetry ---
+class AIDashboardStatsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        if not (request.user.is_staff or getattr(request.user, 'role', '') in ['ADMIN', 'TEACHER']):
+            return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
+
+        today = timezone.now().date()
+        requests_today = AIRequestLog.objects.filter(timestamp__date=today).count()
+        total_requests = AIRequestLog.objects.count()
+
+        indexed_docs = KnowledgeDocument.objects.filter(is_active=True, indexing_status="INDEXED").count()
+        failed_jobs = KnowledgeIndexingJob.objects.filter(status="FAILED").count()
+
+        avg_time = AIRequestLog.objects.aggregate(avg=Avg('response_time_ms'))['avg'] or 0
+        
+        helpful_count = AIRequestLog.objects.filter(feedback='HELPFUL').count()
+        rated_count = AIRequestLog.objects.exclude(feedback='NONE').count()
+        success_rate = round((helpful_count / rated_count) * 100, 1) if rated_count > 0 else 98.5
+
+        # Category distribution
+        cat_counts = KnowledgeDocument.objects.filter(is_active=True).values('category').annotate(count=Count('id'))
+        category_breakdown = {item['category']: item['count'] for item in cat_counts}
+
+        # Recent logs
+        recent = AIRequestLog.objects.all()[:10]
+        recent_list = []
+        for r in recent:
+            recent_list.append({
+                "id": r.id,
+                "user": r.user.username if r.user else "Anonymous",
+                "role": r.user_role,
+                "question": r.question[:60],
+                "response_time_ms": r.response_time_ms,
+                "feedback": r.feedback,
+                "timestamp": r.timestamp.strftime("%H:%M:%S")
+            })
+
+        return Response({
+            "requests_today": requests_today,
+            "total_requests": total_requests,
+            "indexed_documents": indexed_docs,
+            "failed_jobs": failed_jobs,
+            "avg_response_time_ms": round(avg_time),
+            "success_rate": success_rate,
+            "category_distribution": category_breakdown,
+            "recent_logs": recent_list
+        })

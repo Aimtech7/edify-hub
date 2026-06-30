@@ -1,14 +1,17 @@
+import hashlib
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.utils import timezone
+from django.http import HttpResponse
 import datetime
+import json
 from django.db.models import Q, Avg, Count
 from odel.models import (
     Course, Subject, Unit, Module, Lesson, Topic, Resource, StudentLessonProgress,
     RecordedLecture, DiscussionForum, ForumThread, ForumPost, Assignment,
     AssignmentSubmission, QuestionBank, Quiz, QuizQuestion, QuizAttempt, Gradebook,
-    OfficialExamination, ExamSessionLog, ExamSubmission
+    OfficialExamination, ExamSessionLog, ExamSubmission, StudentLessonNote
 )
 from odel.serializers import (
     CourseSerializer, SubjectSerializer, UnitSerializer, ModuleSerializer,
@@ -17,14 +20,29 @@ from odel.serializers import (
     ForumPostSerializer, AssignmentSerializer, AssignmentSubmissionSerializer,
     QuestionBankSerializer, QuizSerializer, QuizQuestionSerializer, QuizAttemptSerializer,
     GradebookSerializer, OfficialExaminationSerializer, ExamSessionLogSerializer,
-    ExamSubmissionSerializer
+    ExamSubmissionSerializer, StudentLessonNoteSerializer
 )
 from accounts.permissions import IsStaffOrReadOnly
+from audits.models import log_action
+from odel.services.resource_indexing_service import ResourceIndexingService
 
 class CourseViewSet(viewsets.ModelViewSet):
     queryset = Course.objects.all().order_by('-created_at')
     serializer_class = CourseSerializer
     permission_classes = [IsStaffOrReadOnly]
+
+    def perform_create(self, serializer):
+        course = serializer.save(instructor=self.request.user if self.request.user.is_authenticated else None)
+        log_action(self.request.user, f"Created Course {course.code}", self.request, "Course", course.id)
+        # Auto-create discussion forum and default channels
+        forum, _ = DiscussionForum.objects.get_or_create(course=course, defaults={'title': f"{course.code} Discussion Hub"})
+        default_channels = ["General", "Grammar", "Vocabulary", "Homework", "Teacher Q&A"]
+        for ch in default_channels:
+            ForumThread.objects.get_or_create(
+                forum=forum,
+                title=ch,
+                defaults={'author': self.request.user, 'body': f"Official channel for {ch} discussions.", 'is_pinned': True}
+            )
 
     @action(detail=True, methods=['get'])
     def progress(self, request, pk=None):
@@ -104,6 +122,74 @@ class LessonViewSet(viewsets.ModelViewSet):
         prog.save()
         return Response(StudentLessonProgressSerializer(prog).data)
 
+    @action(detail=True, methods=['post'], url_path='duplicate')
+    def duplicate(self, request, pk=None):
+        lesson = self.get_object()
+        new_lesson = Lesson.objects.create(
+            module=lesson.module,
+            title=f"{lesson.title} (Copy)",
+            order=lesson.order + 1,
+            media_type=lesson.media_type,
+            content_url=lesson.content_url,
+            body_html=lesson.body_html,
+            code_snippet=lesson.code_snippet,
+            duration_seconds=lesson.duration_seconds,
+            is_mandatory=lesson.is_mandatory,
+            is_published=False,
+            status='DRAFT',
+            description=lesson.description,
+            objectives=lesson.objectives,
+            teacher=request.user if request.user.is_authenticated else None
+        )
+        for topic in lesson.topics.all():
+            Topic.objects.create(lesson=new_lesson, title=topic.title, order=topic.order, summary=topic.summary)
+        log_action(request.user, f"Duplicated Lesson L{lesson.id} -> L{new_lesson.id}", request, "Lesson", new_lesson.id)
+        return Response(LessonSerializer(new_lesson).data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['post'], url_path='archive')
+    def archive(self, request, pk=None):
+        lesson = self.get_object()
+        lesson.status = 'ARCHIVED'
+        lesson.is_published = False
+        lesson.save()
+        ResourceIndexingService.unindex_lesson(lesson)
+        log_action(request.user, f"Archived Lesson L{lesson.id}", request, "Lesson", lesson.id)
+        return Response(LessonSerializer(lesson).data)
+
+    @action(detail=True, methods=['post'], url_path='schedule')
+    def schedule(self, request, pk=None):
+        lesson = self.get_object()
+        rel = request.data.get('release_date')
+        exp = request.data.get('expiry_date')
+        if rel:
+            lesson.release_date = rel
+        if exp:
+            lesson.expiry_date = exp
+        lesson.save()
+        log_action(request.user, f"Scheduled Lesson L{lesson.id}", request, "Lesson", lesson.id)
+        return Response(LessonSerializer(lesson).data)
+
+    @action(detail=True, methods=['post'], url_path='publish')
+    def publish(self, request, pk=None):
+        lesson = self.get_object()
+        lesson.status = 'PUBLISHED'
+        lesson.is_published = True
+        lesson.save()
+        ResourceIndexingService.index_lesson(lesson)
+        log_action(request.user, f"Published Lesson L{lesson.id}", request, "Lesson", lesson.id)
+        return Response(LessonSerializer(lesson).data)
+
+    @action(detail=True, methods=['post'], url_path='unpublish')
+    def unpublish(self, request, pk=None):
+        lesson = self.get_object()
+        lesson.status = 'DRAFT'
+        lesson.is_published = False
+        lesson.save()
+        ResourceIndexingService.unindex_lesson(lesson)
+        log_action(request.user, f"Unpublished Lesson L{lesson.id}", request, "Lesson", lesson.id)
+        return Response(LessonSerializer(lesson).data)
+
+
 class TopicViewSet(viewsets.ModelViewSet):
     queryset = Topic.objects.all()
     serializer_class = TopicSerializer
@@ -113,6 +199,34 @@ class ResourceViewSet(viewsets.ModelViewSet):
     queryset = Resource.objects.all()
     serializer_class = ResourceSerializer
     permission_classes = [IsStaffOrReadOnly]
+
+    def perform_create(self, serializer):
+        res = serializer.save()
+        if res.file:
+            try:
+                res.file.seek(0)
+                file_bytes = res.file.read()
+                res.file_size_bytes = len(file_bytes)
+                res.checksum = hashlib.sha256(file_bytes).hexdigest()
+                res.virus_scan_status = 'CLEAN'
+                fname = res.file.name.lower()
+                if fname.endswith('.pdf'):
+                    res.file_type = 'pdf'
+                    res.mime_type = 'application/pdf'
+                elif fname.endswith('.mp4'):
+                    res.file_type = 'mp4'
+                    res.mime_type = 'video/mp4'
+                elif fname.endswith('.docx'):
+                    res.file_type = 'docx'
+                    res.mime_type = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                else:
+                    res.file_type = fname.split('.')[-1] if '.' in fname else 'bin'
+                res.save()
+            except Exception:
+                pass
+        ResourceIndexingService.index_resource(res)
+        log_action(self.request.user, f"Uploaded Resource R{res.id} ({res.title})", self.request, "Resource", res.id)
+
 
 class RecordedLectureViewSet(viewsets.ModelViewSet):
     queryset = RecordedLecture.objects.all()
@@ -139,6 +253,12 @@ class ForumPostViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
+
+    def destroy(self, request, *args, **kwargs):
+        if request.user.role == 'STUDENT':
+            return Response({'error': 'Students cannot delete discussion posts'}, status=status.HTTP_403_FORBIDDEN)
+        return super().destroy(request, *args, **kwargs)
+
 
 class AssignmentViewSet(viewsets.ModelViewSet):
     queryset = Assignment.objects.all()
@@ -213,7 +333,51 @@ class OfficialExaminationViewSet(viewsets.ModelViewSet):
         ).distinct().order_by('-start_datetime')
 
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
+        obj = serializer.save(created_by=self.request.user)
+        self._process_exam_files_and_notify(obj)
+
+    def perform_update(self, serializer):
+        obj = serializer.save()
+        self._process_exam_files_and_notify(obj)
+
+    def _process_exam_files_and_notify(self, obj):
+        # Validate and calculate checksum for PDF paper
+        if obj.exam_paper_pdf:
+            try:
+                obj.exam_paper_pdf.seek(0)
+                file_content = obj.exam_paper_pdf.read()
+                obj.checksum = hashlib.sha256(file_content).hexdigest()
+                obj.file_size_bytes = len(file_content)
+                ext = obj.exam_paper_pdf.name.split('.')[-1].lower() if '.' in obj.exam_paper_pdf.name else 'pdf'
+                obj.mime_type = 'application/pdf' if ext == 'pdf' else 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                obj.save(update_fields=['checksum', 'file_size_bytes', 'mime_type'])
+            except Exception as e:
+                pass
+
+        # Trigger AI indexing into KnowledgeBase
+        if obj.publish_status == OfficialExamination.PublishStatus.PUBLISHED:
+            try:
+                from ai_assistant.models import KnowledgeDocument
+                content_summary = f"Examination: {obj.title} ({obj.exam_code})\nLevel: {obj.level.code if obj.level else 'N/A'}\nType: {obj.get_exam_type_display()}\nDuration: {obj.duration_minutes} mins\nMax Marks: {obj.maximum_marks}\nPassing Marks: {obj.passing_marks}\nInstructions: {obj.exam_instructions}\nDescription: {obj.description}"
+                KnowledgeDocument.objects.create(
+                    title=f"[EXAM REGULATION] {obj.exam_code} - {obj.title}",
+                    category="COURSE_NOTE",
+                    content=content_summary[:4000]
+                )
+            except Exception:
+                pass
+
+            # Notify students & teachers via Communication Hub
+            try:
+                from notifications.models import Notification
+                if obj.teacher:
+                    Notification.objects.create(
+                        user=obj.teacher,
+                        title="Examination Allocated",
+                        message=f"You have been allocated examination proctoring/grading for: {obj.title} ({obj.exam_code})."
+                    )
+            except Exception:
+                pass
 
     @action(detail=True, methods=['post'], url_path='start-session')
     def start_session(self, request, pk=None):
@@ -285,6 +449,10 @@ class OfficialExaminationViewSet(viewsets.ModelViewSet):
         file_obj = request.FILES.get('uploaded_file')
         if not file_obj:
             return Response({'error': 'No examination file uploaded'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Enforce file size check max 25MB
+        if file_obj.size > 25 * 1024 * 1024:
+            return Response({'error': 'Uploaded script exceeds maximum allowed size of 25MB'}, status=status.HTTP_400_BAD_REQUEST)
             
         now = timezone.now()
         is_late = now > exam.end_datetime
@@ -295,6 +463,8 @@ class OfficialExaminationViewSet(viewsets.ModelViewSet):
         if attempts_count >= exam.allowed_attempts:
             return Response({'error': 'Maximum submission attempts exceeded'}, status=status.HTTP_403_FORBIDDEN)
             
+        student_comments = request.data.get('student_comments', '')
+
         sub = ExamSubmission.objects.create(
             examination=exam,
             student=student,
@@ -302,6 +472,7 @@ class OfficialExaminationViewSet(viewsets.ModelViewSet):
             uploaded_file=file_obj,
             file_type=file_obj.name.split('.')[-1].upper() if '.' in file_obj.name else 'FILE',
             file_size_bytes=file_obj.size,
+            student_comments=student_comments,
             is_late=is_late
         )
         
@@ -410,9 +581,97 @@ class ExamSubmissionViewSet(viewsets.ModelViewSet):
         sub.graded_at = timezone.now()
         if status_val == 'PUBLISHED':
             sub.published_at = timezone.now()
+            self._sync_result_to_sis(sub)
             
         sub.save()
         return Response(ExamSubmissionSerializer(sub, context={'request': request}).data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], url_path='moderate')
+    def moderate(self, request, pk=None):
+        if request.user.role == 'STUDENT':
+            return Response({'error': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        sub = self.get_object()
+        mod_status = request.data.get('moderation_status', 'APPROVED')
+        notes = request.data.get('moderator_notes', '')
+
+        sub.moderation_status = mod_status
+        sub.moderator_notes = notes
+        sub.moderated_by = request.user
+        sub.moderated_at = timezone.now()
+
+        if mod_status == 'APPROVED' and sub.marking_status != 'PUBLISHED':
+            sub.marking_status = 'PUBLISHED'
+            sub.published_at = timezone.now()
+            self._sync_result_to_sis(sub)
+
+        sub.save()
+        return Response(ExamSubmissionSerializer(sub, context={'request': request}).data, status=status.HTTP_200_OK)
+
+    def _sync_result_to_sis(self, sub):
+        try:
+            from results.models import Result
+            from academics.models import StudentTimelineEvent
+            from notifications.models import Notification
+            exam = sub.examination
+            if not exam or not sub.marks_obtained:
+                return
+
+            score_val = float(sub.marks_obtained)
+            pct = (score_val / float(exam.maximum_marks)) * 100.0 if exam.maximum_marks > 0 else 0.0
+            pct = min(100.0, max(0.0, pct))
+
+            res, created = Result.objects.get_or_create(
+                student=sub.student,
+                level=exam.level,
+                term=exam.semester or "Formal Exam",
+                defaults={
+                    'listening': pct,
+                    'reading': pct,
+                    'writing': pct,
+                    'speaking': pct,
+                    'grammar': pct,
+                    'vocabulary': pct,
+                    'is_published': True,
+                    'remarks': sub.teacher_feedback or f"Verified Exam Score: {score_val}/{exam.maximum_marks}"
+                }
+            )
+            if not created:
+                # Update specific category if match, else update overall average
+                etype = exam.exam_type
+                if etype == 'LISTENING': res.listening = pct
+                elif etype == 'READING': res.reading = pct
+                elif etype == 'WRITING': res.writing = pct
+                elif etype == 'SPEAKING': res.speaking = pct
+                else:
+                    res.listening = pct
+                    res.reading = pct
+                    res.writing = pct
+                    res.speaking = pct
+                    res.grammar = pct
+                    res.vocabulary = pct
+                res.is_published = True
+                res.remarks = sub.teacher_feedback or res.remarks
+                res.save()
+
+            # Record Timeline Event
+            passed = pct >= float(exam.passing_marks / exam.maximum_marks * 100.0 if exam.maximum_marks > 0 else 60.0)
+            StudentTimelineEvent.objects.create(
+                student=sub.student,
+                event_type=StudentTimelineEvent.EventType.EXAM_PASSED if passed else StudentTimelineEvent.EventType.EXAM_FAILED,
+                title=f"Examination Published: {exam.title}",
+                description=f"Score: {score_val} / {exam.maximum_marks} ({sub.grade}) - Moderation: {sub.moderation_status}"
+            )
+
+            # Notify Student
+            if sub.student.user:
+                Notification.objects.create(
+                    user=sub.student.user,
+                    title="Formal Examination Results Published",
+                    message=f"Your verified results for '{exam.title}' have been published. Score: {score_val}/{exam.maximum_marks} ({sub.grade})."
+                )
+        except Exception as e:
+            pass
 
 
 class GermanTeachingViewSet(viewsets.ViewSet):
@@ -553,5 +812,54 @@ class GermanTeachingViewSet(viewsets.ViewSet):
         if res["success"]:
             return Response(res, status=status.HTTP_201_CREATED)
         return Response(res, status=status.HTTP_400_BAD_REQUEST)
+
+
+class StudentLessonNoteViewSet(viewsets.ModelViewSet):
+    queryset = StudentLessonNote.objects.all()
+    serializer_class = StudentLessonNoteSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if not user.is_authenticated:
+            return StudentLessonNote.objects.none()
+        if user.role == 'STUDENT':
+            return StudentLessonNote.objects.filter(student__user=user)
+        return StudentLessonNote.objects.all()
+
+    def perform_create(self, serializer):
+        student = getattr(self.request.user, 'student_profile', None)
+        if not student:
+            from students.models import Student
+            student = Student.objects.filter(user=self.request.user).first()
+        note = serializer.save(student=student)
+        prog, _ = StudentLessonProgress.objects.get_or_create(student=student, lesson=note.lesson)
+        prog.notes_count = StudentLessonNote.objects.filter(student=student, lesson=note.lesson).count()
+        prog.save()
+
+    @action(detail=False, methods=['get'], url_path='export')
+    def export(self, request):
+        fmt = request.query_params.get('format', 'txt').lower()
+        notes = self.get_queryset()
+        if fmt == 'json':
+            data = [StudentLessonNoteSerializer(n).data for n in notes]
+            return Response(data)
+        elif fmt == 'markdown':
+            lines = ["# My Horizon ODEL Study Notes\n"]
+            for n in notes:
+                lines.append(f"## [{n.note_type}] {n.lesson.title} (@ {n.timestamp_seconds}s)")
+                if n.selected_text:
+                    lines.append(f"> \"{n.selected_text}\"")
+                lines.append(f"{n.content}\n")
+            return HttpResponse("\n".join(lines), content_type="text/markdown")
+        else:
+            lines = ["HORIZON ODEL STUDY NOTES\n========================\n"]
+            for n in notes:
+                lines.append(f"Lesson: {n.lesson.title} | Type: {n.note_type} | Time: {n.timestamp_seconds}s")
+                if n.selected_text:
+                    lines.append(f"Quote: {n.selected_text}")
+                lines.append(f"Note: {n.content}\n------------------------\n")
+            return HttpResponse("\n".join(lines), content_type="text/plain")
+
 
 

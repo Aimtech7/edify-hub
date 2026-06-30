@@ -6,19 +6,24 @@ export interface CommandCenterData {
     active_students: number;
     applicants: number;
     admissions_today: number;
+    teacher_count: number;
+    staff_count: number;
     today_attendance_pct: number;
     teacher_attendance_pct: number;
     courses_running: number;
     classes_running: number;
+    odel_courses_active: number;
     todays_revenue: number;
     outstanding_fees: number;
     receipts_issued_today: number;
     payments_awaiting_allocation: number;
     certificates_generated: number;
-    exams_scheduled: number;
+    exams_completed: number;
+    exams_pending_marking: number;
     assignments_due: number;
-    support_tickets: number;
     communication_activity: number;
+    unread_messages: number;
+    broadcasts_sent: number;
     storage_usage_mb: number;
     ai_usage_queries: number;
     active_workflows: number;
@@ -73,7 +78,7 @@ export interface AcademicBIData {
   enrollment_by_intake: Array<{ intake: string; count: number }>;
   enrollment_by_campus: Array<{ campus: string; count: number }>;
   teacher_workload: Array<{ name: string; classes_assigned: number; students_taught: number }>;
-  class_sizes: Array<{ class_name: string; students: number }>;
+  class_sizes: Array<{ class_name: string; level: string; students: number }>;
   kpis: {
     attendance_rate: number;
     course_completion: number;
@@ -87,6 +92,7 @@ export interface AdmissionsBIData {
     applications_pending: number;
     applications_approved: number;
     applications_rejected: number;
+    interviews_scheduled: number;
   };
   admissions_by_intake: Array<{ intake: string; count: number }>;
   admissions_by_country: Array<{ country: string; count: number }>;
@@ -96,7 +102,9 @@ export interface AdmissionsBIData {
 export interface OdelBIData {
   kpis: {
     lessons_published: number;
-    lessons_viewed: number;
+    draft_lessons: number;
+    completed_lessons: number;
+    assignments_total: number;
     assignments_submitted: number;
     discussion_activity: number;
     resource_downloads: number;
@@ -104,19 +112,58 @@ export interface OdelBIData {
     online_students: number;
     virtual_classes: number;
     learning_progress_pct: number;
+    storage_usage_mb: number;
+    student_notes: number;
   };
 }
 
 export interface CommunicationBIData {
   kpis: {
+    messages_total: number;
     messages_today: number;
-    announcements: number;
-    group_activity: number;
     unread_messages: number;
+    announcements: number;
+    broadcasts_sent: number;
+    active_conversations: number;
+    attachment_storage_mb: number;
     ai_conversations: number;
   };
-  most_active_classes: Array<{ class: string; messages: number }>;
-  most_active_teachers: Array<{ teacher: string; announcements: number }>;
+  most_active_conversations: Array<{ conversation: string; messages: number }>;
+  most_active_announcers: Array<{ author: string; announcements: number }>;
+}
+
+export interface ExamBIData {
+  kpis: {
+    total_results: number;
+    completed_exams: number;
+    pending_marking: number;
+    published_results: number;
+    avg_score: number;
+    pass_rate: number;
+    exam_sessions: number;
+    exam_submissions: number;
+  };
+  grade_distribution: Record<string, number>;
+  results_by_level: Array<{ level: string; count: number; avg_score: number }>;
+}
+
+export interface CertificateBIData {
+  kpis: {
+    issued_total: number;
+    revoked_total: number;
+    issued_today: number;
+    eligible_awaiting: number;
+  };
+  by_type: Record<string, number>;
+  by_level: Array<{ level: string; count: number }>;
+  recent_certificates: Array<{
+    certificate_number: string;
+    student: string;
+    name: string;
+    level: string;
+    type: string;
+    issue_date: string;
+  }>;
 }
 
 export interface ReportResult {
@@ -157,6 +204,14 @@ export const analyticsService = {
   },
   getCommunicationBI: async (): Promise<CommunicationBIData> => {
     const { data } = await apiClient.get("/analytics/communication/");
+    return data;
+  },
+  getExamBI: async (): Promise<ExamBIData> => {
+    const { data } = await apiClient.get("/analytics/exams/");
+    return data;
+  },
+  getCertificateBI: async (): Promise<CertificateBIData> => {
+    const { data } = await apiClient.get("/analytics/certificates/");
     return data;
   },
   askAIAssistant: async (prompt: string): Promise<any> => {

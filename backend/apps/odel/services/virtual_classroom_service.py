@@ -119,3 +119,46 @@ class VirtualClassroomService:
         )
 
         return log
+
+    @classmethod
+    def get_countdown_metadata(cls, virtual_class_id: int) -> dict:
+        vc = VirtualClass.objects.get(id=virtual_class_id)
+        now = timezone.now()
+        
+        # Combine date and start_time assuming institution timezone
+        start_dt = timezone.make_aware(datetime.datetime.combine(vc.date, vc.start_time))
+        end_dt = timezone.make_aware(datetime.datetime.combine(vc.date, vc.end_time))
+        
+        seconds_remaining = int((start_dt - now).total_seconds())
+        is_live = vc.status == VirtualClass.Status.LIVE or (start_dt <= now <= end_dt)
+        is_ended = vc.status == VirtualClass.Status.ENDED or now > end_dt
+        
+        return {
+            "id": vc.id,
+            "meeting_id": vc.meeting_id,
+            "platform": vc.platform,
+            "seconds_until_start": max(0, seconds_remaining),
+            "is_live": is_live,
+            "is_ended": is_ended,
+            "join_link": vc.student_join_link,
+            "host_link": vc.host_link
+        }
+
+    @classmethod
+    def schedule_recurring_meetings(cls, cohort, teacher, platform, start_date, start_time, end_time, weeks=4):
+        created_classes = []
+        current_date = start_date
+        for i in range(weeks):
+            vc = cls.schedule_meeting(
+                cohort=cohort,
+                teacher=teacher,
+                platform=platform,
+                date=current_date,
+                start_time=start_time,
+                end_time=end_time,
+                is_recurring=True
+            )
+            created_classes.append(vc)
+            current_date += datetime.timedelta(days=7)
+        return created_classes
+

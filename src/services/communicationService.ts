@@ -91,9 +91,15 @@ export interface BroadcastMessage {
 export interface AdminStats {
   messages_today: number;
   unread_messages: number;
+  active_conversations?: number;
+  announcements?: number;
+  broadcasts?: number;
+  storage_bytes?: number;
   online_users: number;
   ai_conversations: number;
   storage_status: string;
+  most_active_users?: { username: string; name: string; count: number }[];
+  discussion_activity?: { type: string; count: number }[];
 }
 
 export const communicationService = {
@@ -221,7 +227,6 @@ export const communicationService = {
       title,
       message,
       channel,
-      recipient_count: Math.floor(Math.random() * 150) + 10,
     });
     return res.data;
   },

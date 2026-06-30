@@ -1,7 +1,7 @@
-# ERP Migration & Refactoring Report
+
 **Horizon Deutsch Training Institute LMS & Finance ERP**
 
-This report details the work completed to transition the Horizon LMS frontend into a production-ready system aligned to German language teaching (CEFR levels) with role-based routing and a robust API service architecture.
+
 
 ---
 
@@ -71,11 +71,7 @@ src/
 
 ---
 
-## 2. Migration Report
 
-### TanStack Clean Up
-- Deleted all configurations, imports, and variables referring to `@tanstack/react-router`, `@tanstack/react-start`, `@tanstack/react-query`, and `@tanstack/router-plugin`.
-- Cleaned up the eslint configuration rules in `eslint.config.js` to ensure the project has no remaining references to TanStack structures.
 
 ### CEFR Language School Transition
 - Removed all remnants of K-12 schooling structures (Grade 1-12, Form 1-4, Class 1-8).

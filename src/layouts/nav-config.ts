@@ -123,6 +123,8 @@ export const NAV: Record<Role, NavGroup[]> = {
         { to: "/app/communication", label: "Communication Hub", icon: MessageSquare },
         { to: "/app/users",     label: "User Management", icon: Users },
         { to: "/app/roles",     label: "Roles",           icon: ShieldCheck },
+        { to: "/app/automation-engine", label: "Automation Engine", icon: Layers3 },
+        { to: "/app/command-center", label: "Executive BI", icon: BarChart3 },
       ],
     },
     {

@@ -1,5 +1,5 @@
 # Horizon ODEL — Enterprise Secure PDF Examination Storage & Cloud Telemetry Report
-
+**BY: AIMTECH**
 **Date:** June 27, 2026  
 **Audience:** ICT Infrastructure & Cloud DevOps Operations  
 **System Status:** DEPLOYED & VERIFIED  
@@ -8,7 +8,7 @@
 
 ## 1. Storage Topology & Partitioning Strategy
 
-To guarantee strict isolation between standard institutional documents (invoices, certificates, attendance logs) and confidential examination assets, all formal ODEL evaluation files are routed into dedicated bucket prefixes within our central Supabase S3 cloud gateway (`StorageService`).
+To guarantee strict isolation between standard institutional documents (invoices, certificates, attendance logs) and confidential examination assets, all formal ODEL evaluation files are routed into dedicated bucket prefixes within my central Supabase S3 cloud gateway (`StorageService`).
 
 | Asset Classification | Storage Bucket Prefix | Access Policy | Retention Period |
 | :--- | :--- | :--- | :--- |

@@ -56,6 +56,8 @@ INSTALLED_APPS = [
     "hr",
     "ai_assistant",
     "dms",
+    "workflows",
+    "analytics",
 ]
 
 MIDDLEWARE = [

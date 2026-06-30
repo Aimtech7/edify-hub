@@ -1,5 +1,5 @@
 # Horizon ODEL — Enterprise Secure PDF Examination Architecture Report
-
+**BY: AIMTECH**
 **Date:** June 27, 2026  
 **Audience:** Academic Board & Technical Architecture Committee  
 **System Status:** DEPLOYED & VERIFIED  
@@ -36,7 +36,7 @@ Serves as the master registry for formal PDF-based examination papers.
 - **Access Control:** Employs explicit Many-to-Many student eligibility mappings (`eligible_students`) alongside strict temporal gating (`start_time`, `end_time`, `duration_minutes`).
 - **Policy Enforcement:** Defines automated late rules (`ALLOW_LATE`, `PENALTY`, `REJECT`).
 
-### B. `ExamSessionLog`
+### B. `ExamSessionLogS
 Provides high-fidelity audit telemetry capturing student interaction during active examination windows.
 - **Lifecycle Tracking:** Records precise timestamps for session initialization, PDF rendering, and document downloading.
 - **Integrity Telemetry:** Logs browser visibility changes (`focus_lost_count`), connection dropouts (`connection_interruptions`), and device IP metadata.

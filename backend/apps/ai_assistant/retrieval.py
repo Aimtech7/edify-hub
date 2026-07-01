@@ -32,10 +32,9 @@ def retrieve_rag_context(user, question: str) -> tuple[str, list[dict]]:
                     from finance.models import StudentLedger, PaymentPlan
                     plan = PaymentPlan.objects.filter(student=student).first()
                     if plan:
-                        context_chunks.append(f"Fee Statement: Total Fee KES {plan.total_fee:,.2f}, Paid KES {plan.amount_paid:,.2f}, Outstanding Balance: KES {plan.balance:,.2f} (Status: {plan.status}).")
+                        context_chunks.append(f"Fee Statement: Total Fee KES {plan.total_fee:,.2f}, Paid KES {plan.amount_paid:,.2f}, Outstanding Balance: KES {plan.outstanding_balance:,.2f} (Status: {plan.status}).")
                     else:
-                        ledgers = StudentLedger.objects.filter(student=student).order_by('-created_at')[:5]
-                        latest_bal = ledgers.first().balance_after if ledgers.exists() else 0
+                        latest_bal = getattr(student, 'outstanding_balance', 0)
                         context_chunks.append(f"Fee Statement Balance: KES {latest_bal:,.2f}.")
                     actions.append({"action": "NAVIGATE", "label": "Open Fee Statement & Payments", "url": "/app/payments"})
 
@@ -52,16 +51,16 @@ def retrieve_rag_context(user, question: str) -> tuple[str, list[dict]]:
                 # Check results / exams
                 if any(k in q_lower for k in ['result', 'mark', 'grade', 'score', 'exam', 'pass']):
                     from results.models import Result
-                    results = Result.objects.filter(student=student).order_by('-recorded_date')[:5]
-                    res_str = ", ".join([f"{r.exam_name}: {r.score} ({r.grade})" for r in results]) if results.exists() else "No recent exam results published."
+                    results = Result.objects.filter(student=student).order_by('-created_at')[:5]
+                    res_str = ", ".join([f"{r.level.code} ({r.term}): {r.average_score} ({r.grade})" for r in results]) if results.exists() else "No recent exam results published."
                     context_chunks.append(f"Academic Results: {res_str}")
                     actions.append({"action": "NAVIGATE", "label": "View Transcript & Results", "url": "/app/results"})
 
                 # Check certificates
                 if any(k in q_lower for k in ['certificate', 'cert', 'goethe', 'graduate']):
                     from certificates.models import Certificate
-                    certs = Certificate.objects.filter(student=student)
-                    cert_str = ", ".join([f"{c.course_name} ({c.certificate_number})" for c in certs]) if certs.exists() else "No issued certificates."
+                    certs = Certificate.objects.filter(student=student).order_by('-issue_date')
+                    cert_str = ", ".join([f"{c.level.code} {c.get_certificate_type_display()} ({c.certificate_number})" for c in certs]) if certs.exists() else "No issued certificates."
                     context_chunks.append(f"Certificates: {cert_str}")
                     actions.append({"action": "NAVIGATE", "label": "Download Verified Certificates", "url": "/app/certificates"})
 

@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 import json
+import os
 
 class AISetting(models.Model):
     class Provider(models.TextChoices):
@@ -29,7 +30,18 @@ class AISetting(models.Model):
 
     @classmethod
     def get_settings(cls):
-        obj, _ = cls.objects.get_or_create(id=1)
+        obj, created = cls.objects.get_or_create(id=1)
+        changed = False
+        env_openai = os.getenv("OPENAI_API_KEY", "").strip()
+        env_hf = os.getenv("HUGGINGFACE_API_KEY", "").strip()
+        if env_openai and not obj.openai_api_key:
+            obj.openai_api_key = env_openai
+            changed = True
+        if env_hf and not obj.huggingface_api_key:
+            obj.huggingface_api_key = env_hf
+            changed = True
+        if changed:
+            obj.save()
         return obj
 
     def __str__(self):

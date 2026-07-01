@@ -3,7 +3,7 @@ import math
 from django.db.models import Q
 from ai_assistant.models import KnowledgeDocument
 
-def retrieve_rag_context(user, question: str) -> tuple[str, list[dict]]:
+def retrieve_rag_context(user, question: str, intent: str = None) -> tuple[str, list[dict]]:
     """
     Retrieves role-aware structured ERP context and semantic knowledge documents.
     Returns (context_text, suggested_actions)
@@ -28,7 +28,7 @@ def retrieve_rag_context(user, question: str) -> tuple[str, list[dict]]:
                 context_chunks.append(f"Student Profile: {student.first_name} {student.last_name} (Adm: {student.admission_number}, Level: {student.current_level}, Campus: {student.campus}, Status: {student.status}).")
                 
                 # Check balance / fees
-                if any(k in q_lower for k in ['balance', 'fee', 'pay', 'statement', 'receipt', 'money', 'cost']):
+                if intent == "FINANCE" or any(k in q_lower for k in ['balance', 'fee', 'pay', 'statement', 'receipt', 'money', 'cost']):
                     from finance.models import StudentLedger, PaymentPlan
                     plan = PaymentPlan.objects.filter(student=student).first()
                     if plan:
@@ -39,7 +39,7 @@ def retrieve_rag_context(user, question: str) -> tuple[str, list[dict]]:
                     actions.append({"action": "NAVIGATE", "label": "Open Fee Statement & Payments", "url": "/app/payments"})
 
                 # Check attendance
-                if any(k in q_lower for k in ['attendance', 'absent', 'present', 'class', 'missed']):
+                if intent == "ATTENDANCE" or any(k in q_lower for k in ['attendance', 'absent', 'present', 'class', 'missed']):
                     from attendance.models import Attendance
                     atts = Attendance.objects.filter(student=student).order_by('-date')[:10]
                     present_cnt = atts.filter(status='Present').count()
@@ -49,7 +49,7 @@ def retrieve_rag_context(user, question: str) -> tuple[str, list[dict]]:
                     actions.append({"action": "NAVIGATE", "label": "View Full Attendance Log", "url": "/app/attendance"})
 
                 # Check results / exams
-                if any(k in q_lower for k in ['result', 'mark', 'grade', 'score', 'exam', 'pass']):
+                if intent == "CERTIFICATES" or any(k in q_lower for k in ['result', 'mark', 'grade', 'score', 'exam', 'pass']):
                     from results.models import Result
                     results = Result.objects.filter(student=student).order_by('-created_at')[:5]
                     res_str = ", ".join([f"{r.level.code} ({r.term}): {r.average_score} ({r.grade})" for r in results]) if results.exists() else "No recent exam results published."
@@ -57,7 +57,7 @@ def retrieve_rag_context(user, question: str) -> tuple[str, list[dict]]:
                     actions.append({"action": "NAVIGATE", "label": "View Transcript & Results", "url": "/app/results"})
 
                 # Check certificates
-                if any(k in q_lower for k in ['certificate', 'cert', 'goethe', 'graduate']):
+                if intent == "CERTIFICATES" or any(k in q_lower for k in ['certificate', 'cert', 'goethe', 'graduate']):
                     from certificates.models import Certificate
                     certs = Certificate.objects.filter(student=student).order_by('-issue_date')
                     cert_str = ", ".join([f"{c.level.code} {c.get_certificate_type_display()} ({c.certificate_number})" for c in certs]) if certs.exists() else "No issued certificates."
@@ -80,12 +80,12 @@ def retrieve_rag_context(user, question: str) -> tuple[str, list[dict]]:
             if any(k in q_lower for k in ['student', 'count', 'total']):
                 from students.models import Student
                 context_chunks.append(f"System Metrics: Total Active Students = {Student.objects.count()}.")
-            if any(k in q_lower for k in ['admission', 'applicant', 'queue', 'new']):
+            if intent == "ADMISSIONS" or any(k in q_lower for k in ['admission', 'applicant', 'queue', 'new']):
                 from students.models import AdmissionApplication
                 new_cnt = AdmissionApplication.objects.filter(status='New').count()
                 context_chunks.append(f"Admissions Queue: {new_cnt} new unreviewed applications pending.")
                 actions.append({"action": "NAVIGATE", "label": "Open Admissions Queue", "url": "/admin/students/admissionapplication/?status__exact=New"})
-            if any(k in q_lower for k in ['revenue', 'money', 'payment', 'finance']):
+            if intent == "FINANCE" or any(k in q_lower for k in ['revenue', 'money', 'payment', 'finance']):
                 from finance.models import Payment
                 context_chunks.append("Finance Overview: Revenue ledger active. Visit daily summary for exact real-time cashflow.")
                 actions.append({"action": "NAVIGATE", "label": "Open Finance Dashboard", "url": "/app/finance"})
@@ -162,7 +162,7 @@ def retrieve_rag_context(user, question: str) -> tuple[str, list[dict]]:
 
     # Check for German Learning / Goethe Tutoring query
     german_keywords = ['grammar', 'vocab', 'word', 'verb', 'translate', 'conjugat', 'accusative', 'dative', 'genitive', 'preposition', 'artikel', 'der', 'die', 'das', 'sprechen', 'schreiben', 'goethe', 'german', 'deutsch', 'pronounce', 'sentence', 'meaning', 'difference between']
-    if any(k in q_lower for k in german_keywords):
+    if intent == "GENERAL_CONVERSATION" or any(k in q_lower for k in german_keywords):
         context_chunks.insert(0, (
             "GOETHE GERMAN TUTOR MODE ACTIVE:\n"
             "- You are a certified Goethe-Institut examiner and experienced German teacher at Horizon Deutsch Training Institute.\n"
@@ -173,7 +173,7 @@ def retrieve_rag_context(user, question: str) -> tuple[str, list[dict]]:
         ))
         actions.append({"action": "NAVIGATE", "label": "Open Digital Library & Past Papers", "url": "/app/library"})
 
-    # Default institutional context if empty
+    # Default institutional / general context if empty
     if not context_chunks:
         context_chunks.append("Horizon Deutsch Training Institute is premier German training and culture center offering CEFR A1 to C2 courses, Goethe-Zertifikat preparation, and Ausbildung pathways in Kenya.")
 

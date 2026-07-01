@@ -18,6 +18,9 @@ from ai_assistant.retrieval import retrieve_rag_context
 from ai_assistant.providers import get_llm_provider
 from ai_assistant.services.indexing_service import IndexingService
 from ai_assistant.services.search_service import AISearchService
+from ai_assistant.services.intent import IntentClassifier
+from ai_assistant.services.memory import ConversationMemoryService
+from ai_assistant.services.gateway import AIGateway
 
 
 class AIChatView(APIView):
@@ -42,31 +45,40 @@ class AIChatView(APIView):
                 title = question[:40] + ("..." if len(question) > 40 else "")
                 session = AIConversationSession.objects.create(user=user, title=title)
 
-        # 1. Retrieve RAG Context & Suggested Actions
-        context_text, actions = retrieve_rag_context(user, question)
+        # 1. Intent Classification
+        intent = IntentClassifier.classify(question)
 
-        # 2. Get AI Provider & Generate
+        # 2. Retrieve Short-Term Conversation Memory
+        memory_context = ConversationMemoryService.get_conversation_history(session=session, user=user)
+
+        # 3. Retrieve Role-Aware RAG Context & Suggested Actions
+        retrieval_start = time.time()
+        context_text, actions = retrieve_rag_context(user, question, intent=intent)
+        retrieval_time_ms = int((time.time() - retrieval_start) * 1000)
+
+        # 4. Get AI Configuration & Execute via AI Gateway
+        gen_start = time.time()
         config = AISetting.get_settings()
-        provider = get_llm_provider(config)
-        
-        reply = provider.generate(
-            system_prompt=config.system_prompt,
-            user_prompt=question,
+        reply, provider_used, fallback_reason, tokens_used = AIGateway.execute(
+            question=question,
             context=context_text,
-            temperature=config.temperature,
-            max_tokens=config.max_tokens
+            user=user,
+            role=role,
+            intent=intent,
+            memory_context=memory_context,
+            config=config
         )
-
+        generation_time_ms = int((time.time() - gen_start) * 1000)
         elapsed_ms = int((time.time() - start_time) * 1000)
 
-        # 3. Log Audit Record
+        # 5. Log Audit Record with Detailed Telemetry
         log = AIRequestLog.objects.create(
             session=session,
             user=user,
             user_role=role,
             question=question,
-            retrieved_context=context_text[:1500],
-            model_used=f"{config.provider}:{config.model_name}",
+            retrieved_context=f"[Intent: {intent} | Provider: {provider_used}]\n{context_text[:1400]}",
+            model_used=f"{provider_used}:{config.model_name}",
             response_text=reply,
             response_time_ms=elapsed_ms
         )
@@ -85,7 +97,13 @@ class AIChatView(APIView):
             "log_id": log.id,
             "session_id": session.id if session else None,
             "model": config.model_name,
-            "response_time_ms": elapsed_ms
+            "provider_used": provider_used,
+            "intent": intent,
+            "retrieval_time_ms": retrieval_time_ms,
+            "generation_time_ms": generation_time_ms,
+            "response_time_ms": elapsed_ms,
+            "fallback_reason": fallback_reason,
+            "tokens_used": tokens_used
         })
 
 

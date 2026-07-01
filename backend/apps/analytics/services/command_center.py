@@ -1,5 +1,4 @@
 import datetime
-import psutil
 from django.db import connection
 from django.db.models import Sum, Count, Avg, Q
 
@@ -172,6 +171,7 @@ def get_executive_overview():
     cpu_usage = 0.0
     mem_usage = 0.0
     try:
+        import psutil
         cpu_usage = psutil.cpu_percent(interval=None)
         mem = psutil.virtual_memory()
         mem_usage = mem.percent

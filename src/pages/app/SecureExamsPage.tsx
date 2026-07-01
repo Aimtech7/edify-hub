@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ShieldAlert, Clock, FileText, Upload, CheckCircle2, AlertTriangle, Lock, Eye, Download, Send } from 'lucide-react';
+import { API_BASE_URL, TOKEN_KEYS } from '@/services/api-client';
 
 interface FormalExam {
   id: number;
@@ -52,8 +53,8 @@ export function SecureExamsPage() {
   const fetchExams = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('horizon_access_token') || localStorage.getItem('token') || '';
-      const res = await fetch('/api/odel/formal-exams/', {
+      const token = localStorage.getItem(TOKEN_KEYS.ACCESS) || localStorage.getItem('access_token') || localStorage.getItem('token') || '';
+      const res = await fetch(`${API_BASE_URL}/odel/formal-exams/`, {
         headers: {
           'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}`
         }
@@ -77,8 +78,8 @@ export function SecureExamsPage() {
       if (document.hidden) {
         setAlertMessage("⚠️ Focus Violation Detected! Leaving the exam window is recorded in institutional telemetry.");
         try {
-          const token = localStorage.getItem('horizon_access_token') || localStorage.getItem('token') || '';
-          await fetch(`/api/odel/formal-exams/${selectedExam.id}/log-event/`, {
+          const token = localStorage.getItem(TOKEN_KEYS.ACCESS) || localStorage.getItem('access_token') || localStorage.getItem('token') || '';
+          await fetch(`${API_BASE_URL}/odel/formal-exams/${selectedExam.id}/log-event/`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -134,8 +135,8 @@ export function SecureExamsPage() {
   const handleStartSession = async () => {
     if (!selectedExam) return;
     try {
-      const token = localStorage.getItem('horizon_access_token') || localStorage.getItem('token') || '';
-      const res = await fetch(`/api/odel/formal-exams/${selectedExam.id}/start-session/`, {
+      const token = localStorage.getItem(TOKEN_KEYS.ACCESS) || localStorage.getItem('access_token') || localStorage.getItem('token') || '';
+      const res = await fetch(`${API_BASE_URL}/odel/formal-exams/${selectedExam.id}/start-session/`, {
         method: 'POST',
         headers: {
           'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}`
@@ -162,12 +163,12 @@ export function SecureExamsPage() {
     setSubmitting(true);
     setErrorMsg(null);
     try {
-      const token = localStorage.getItem('horizon_access_token') || localStorage.getItem('token') || '';
+      const token = localStorage.getItem(TOKEN_KEYS.ACCESS) || localStorage.getItem('access_token') || localStorage.getItem('token') || '';
       const formData = new FormData();
       formData.append('uploaded_file', uploadFile);
       formData.append('student_comments', studentComments);
 
-      const res = await fetch(`/api/odel/formal-exams/${selectedExam.id}/submit-script/`, {
+      const res = await fetch(`${API_BASE_URL}/odel/formal-exams/${selectedExam.id}/submit-script/`, {
         method: 'POST',
         headers: {
           'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}`

@@ -18,6 +18,7 @@ import {
   Loader2,
   ArrowRight,
 } from "lucide-react";
+import { API_BASE_URL, TOKEN_KEYS } from "@/services/api-client";
 
 interface Application {
   id: number;
@@ -60,9 +61,9 @@ export default function AdmissionsQueuePage() {
   const fetchApplications = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("token") || "";
-      const res = await fetch("http://localhost:8000/api/students/admissions/", {
-        headers: { Authorization: `Token ${token}` },
+      const token = localStorage.getItem(TOKEN_KEYS.ACCESS) || localStorage.getItem("access_token") || localStorage.getItem("token") || "";
+      const res = await fetch(`${API_BASE_URL}/students/admissions/`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (res.ok) {
         const data = await res.json();
@@ -83,12 +84,12 @@ export default function AdmissionsQueuePage() {
     if (!selectedApp) return;
     setActionLoading(true);
     try {
-      const token = localStorage.getItem("token") || "";
-      const res = await fetch(`http://localhost:8000/api/students/admissions/${selectedApp.id}/update_status/`, {
+      const token = localStorage.getItem(TOKEN_KEYS.ACCESS) || localStorage.getItem("access_token") || localStorage.getItem("token") || "";
+      const res = await fetch(`${API_BASE_URL}/students/admissions/${selectedApp.id}/update_status/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Token ${token}`,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({ status: newStatus, notes: notesInput }),
       });
@@ -108,12 +109,10 @@ export default function AdmissionsQueuePage() {
     if (!selectedApp) return;
     setActionLoading(true);
     try {
-      const token = localStorage.getItem("token") || "";
-      const res = await fetch(`http://localhost:8000/api/students/admissions/${selectedApp.id}/convert_to_student/`, {
+      const token = localStorage.getItem(TOKEN_KEYS.ACCESS) || localStorage.getItem("access_token") || localStorage.getItem("token") || "";
+      const res = await fetch(`${API_BASE_URL}/students/admissions/${selectedApp.id}/convert_to_student/`, {
         method: "POST",
-        headers: {
-          Authorization: `Token ${token}`,
-        },
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (res.ok) {
         const data = await res.json();

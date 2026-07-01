@@ -11,4 +11,7 @@ python manage.py collectstatic --noinput
 echo "Running database migrations..."
 python manage.py migrate --noinput
 
+echo "Seeding demo user accounts..."
+python seed_all_demo_users.py
+
 echo "Backend build completed successfully."

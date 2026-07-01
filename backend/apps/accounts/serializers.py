@@ -23,11 +23,16 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         
         # Build user profile details matching frontend AuthUser format
         name = f"{self.user.first_name} {self.user.last_name}".strip() or self.user.username
+        role_mapping = {
+            'finance': 'accountant',
+            'tutor': 'teacher',
+        }
+        role_str = self.user.role.lower()
         user_data = {
             'id': str(self.user.id),
             'name': name,
             'username': self.user.username,
-            'role': self.user.role.lower(),  # Frontend expects lowercase roles
+            'role': role_mapping.get(role_str, role_str),  # Frontend expects lowercase roles
             'email': self.user.email,
         }
 

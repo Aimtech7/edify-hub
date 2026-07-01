@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getUser } from '@/lib/auth';
+import { API_BASE_URL, TOKEN_KEYS } from '@/services/api-client';
 import {
   Bot, Send, Paperclip, Mic, Maximize2, Minimize2, Settings, Trash2, RotateCcw, Copy, Check,
   ThumbsUp, ThumbsDown, FileText, Download, ExternalLink, Sparkles, MessageSquarePlus, X,
@@ -128,11 +129,11 @@ export default function AIChatWidget() {
     setIsLoading(true);
 
     try {
-      const token = localStorage.getItem('access_token') || localStorage.getItem('token');
+      const token = localStorage.getItem(TOKEN_KEYS.ACCESS) || localStorage.getItem('access_token') || localStorage.getItem('token');
       const headers: HeadersInit = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      const res = await fetch('/api/ai/chat/', {
+      const res = await fetch(`${API_BASE_URL}/ai/chat/`, {
         method: 'POST',
         headers,
         body: JSON.stringify({ question: q, role, response_length: config.responseLength })
@@ -194,9 +195,13 @@ export default function AIChatWidget() {
     );
 
     try {
-      await fetch('/api/ai/feedback/', {
+      const token = localStorage.getItem(TOKEN_KEYS.ACCESS) || localStorage.getItem('access_token') || localStorage.getItem('token');
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      await fetch(`${API_BASE_URL}/ai/feedback/`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ log_id: logId, rating })
       });
     } catch (e) {

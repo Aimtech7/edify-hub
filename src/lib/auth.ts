@@ -15,10 +15,16 @@ export function getUser(): AuthUser | null {
 
 export function setUser(u: AuthUser) {
   localStorage.setItem(KEY, JSON.stringify(u));
+  localStorage.setItem("user_name", u.name || "");
+  localStorage.setItem("user_username", u.username || "");
+  localStorage.setItem("user_role", u.role || "");
 }
 
 export function clearUser() {
   localStorage.removeItem(KEY);
+  localStorage.removeItem("user_name");
+  localStorage.removeItem("user_username");
+  localStorage.removeItem("user_role");
 }
 
 export function loginAs(role: Role, username: string): AuthUser {

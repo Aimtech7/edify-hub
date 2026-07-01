@@ -37,7 +37,8 @@ services:
       - DB_PASSWORD=${DB_PASSWORD:-horizon_password}
       - DB_HOST=db
       - DB_PORT=5432
-      - CORS_ALLOWED_ORIGINS=http://localhost:5000,http://localhost:3000
+      - CORS_ALLOWED_ORIGINS=http://localhost:5000,http://localhost:3000,https://edify-hub-1.onrender.com
+      - CORS_ALLOW_ALL_ORIGINS=True
     depends_on:
       db:
         condition: service_healthy
@@ -50,7 +51,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        VITE_API_URL: /api
     container_name: horizon_frontend
+    environment:
+      - BACKEND_HOST=http://backend:8000
     ports:
       - "5000:80"
     depends_on:

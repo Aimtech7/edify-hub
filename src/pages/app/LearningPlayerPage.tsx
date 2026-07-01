@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { PlayCircle, Lock, CheckCircle2, Video, Headphones, FileText, Presentation, Globe, Download, ChevronRight, BookOpen, AlertCircle, Edit3, Trash2, Plus, Share2, Clock, ExternalLink } from "lucide-react";
 import { apiClient as api } from "@/services";
+import { API_BASE_URL } from "@/services/api-client";
 
 interface Resource {
   id: number;
@@ -140,7 +141,7 @@ export default function LearningPlayerPage() {
   };
 
   const handleExportNotes = (format: string) => {
-    window.open(`/api/odel/lesson-notes/export/?format=${format}`, "_blank");
+    window.open(`${API_BASE_URL}/odel/lesson-notes/export/?format=${format}`, "_blank");
   };
 
   const handleLessonSelect = (lesson: Lesson) => {

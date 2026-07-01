@@ -17,6 +17,7 @@ import {
   Tag,
   CheckCircle2,
 } from "lucide-react";
+import { API_BASE_URL, TOKEN_KEYS } from "@/services/api-client";
 
 interface Document {
   id: number;
@@ -60,8 +61,8 @@ export default function LessonResourcesPage() {
   const fetchResources = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("horizon_access_token") || localStorage.getItem("access_token") || localStorage.getItem("token") || "";
-      const res = await fetch("http://localhost:8000/api/dms/documents/?category=lesson-resources", {
+      const token = localStorage.getItem(TOKEN_KEYS.ACCESS) || localStorage.getItem("access_token") || localStorage.getItem("token") || "";
+      const res = await fetch(`${API_BASE_URL}/dms/documents/?category=lesson-resources`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (res.ok) {
@@ -87,7 +88,7 @@ export default function LessonResourcesPage() {
     }
     setUploadLoading(true);
     try {
-      const token = localStorage.getItem("horizon_access_token") || localStorage.getItem("access_token") || localStorage.getItem("token") || "";
+      const token = localStorage.getItem(TOKEN_KEYS.ACCESS) || localStorage.getItem("access_token") || localStorage.getItem("token") || "";
       const formData = new FormData();
       formData.append("category", "lesson-resources");
       formData.append("title", title);
@@ -99,7 +100,7 @@ export default function LessonResourcesPage() {
       if (file) formData.append("file", file);
       if (extLink) formData.append("external_link", extLink);
 
-      const res = await fetch("http://localhost:8000/api/dms/documents/", {
+      const res = await fetch(`${API_BASE_URL}/dms/documents/`, {
         method: "POST",
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,
@@ -126,8 +127,8 @@ export default function LessonResourcesPage() {
 
   const handleDownload = async (doc: Document) => {
     try {
-      const token = localStorage.getItem("horizon_access_token") || localStorage.getItem("access_token") || localStorage.getItem("token") || "";
-      await fetch(`http://localhost:8000/api/dms/documents/${doc.id}/download/`, {
+      const token = localStorage.getItem(TOKEN_KEYS.ACCESS) || localStorage.getItem("access_token") || localStorage.getItem("token") || "";
+      await fetch(`${API_BASE_URL}/dms/documents/${doc.id}/download/`, {
         method: "POST",
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });

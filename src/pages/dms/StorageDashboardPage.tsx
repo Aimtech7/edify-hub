@@ -14,6 +14,7 @@ import {
   Clock,
   User,
 } from "lucide-react";
+import { API_BASE_URL, TOKEN_KEYS } from "@/services/api-client";
 
 interface StorageStats {
   total_files: number;
@@ -33,9 +34,9 @@ export default function StorageDashboardPage() {
   const fetchStats = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("token") || "";
-      const res = await fetch("http://localhost:8000/api/dms/storage/dashboard/", {
-        headers: { Authorization: `Token ${token}` },
+      const token = localStorage.getItem(TOKEN_KEYS.ACCESS) || localStorage.getItem("access_token") || localStorage.getItem("token") || "";
+      const res = await fetch(`${API_BASE_URL}/dms/storage/dashboard/`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
         const data = await res.json();

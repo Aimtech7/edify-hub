@@ -33,8 +33,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (user) localStorage.setItem(USER_KEY, JSON.stringify(user));
-    else localStorage.removeItem(USER_KEY);
+    if (user) {
+      localStorage.setItem(USER_KEY, JSON.stringify(user));
+      localStorage.setItem("user_name", user.name || "");
+      localStorage.setItem("user_username", user.username || "");
+      localStorage.setItem("user_role", user.role || "");
+    } else {
+      localStorage.removeItem(USER_KEY);
+      localStorage.removeItem("user_name");
+      localStorage.removeItem("user_username");
+      localStorage.removeItem("user_role");
+    }
   }, [user]);
 
   const login = async (role: Role, credentials: LoginCredentials) => {

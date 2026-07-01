@@ -5,8 +5,20 @@ export const TOKEN_KEYS = {
   REFRESH: "horizon_refresh_token",
 };
 
+export const getApiBaseUrl = (): string => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (!envUrl) return "/api";
+  const cleanUrl = envUrl.replace(/\/+$/, "");
+  if (!cleanUrl.endsWith("/api")) {
+    return `${cleanUrl}/api`;
+  }
+  return cleanUrl;
+};
+
+export const API_BASE_URL = getApiBaseUrl();
+
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "/api",
+  baseURL: API_BASE_URL,
   headers: { "Content-Type": "application/json" },
 });
 
@@ -40,8 +52,7 @@ apiClient.interceptors.response.use(
       if (refreshToken) {
         try {
           // Call Django REST Framework JWT token refresh endpoint
-          const baseURL = import.meta.env.VITE_API_URL || "/api";
-          const { data } = await axios.post<{ access: string }>(`${baseURL}/auth/token/refresh/`, {
+          const { data } = await axios.post<{ access: string }>(`${API_BASE_URL}/auth/token/refresh/`, {
             refresh: refreshToken,
           });
           

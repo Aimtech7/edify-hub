@@ -13,6 +13,7 @@ import {
   Tag,
   ExternalLink,
 } from "lucide-react";
+import { API_BASE_URL, TOKEN_KEYS } from "@/services/api-client";
 
 interface Document {
   id: number;
@@ -47,12 +48,12 @@ export default function KnowledgeBasePage() {
   const fetchDocs = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("token") || "";
+      const token = localStorage.getItem(TOKEN_KEYS.ACCESS) || localStorage.getItem("access_token") || localStorage.getItem("token") || "";
       const url = activeTab === "all"
-        ? "http://localhost:8000/api/dms/documents/"
-        : `http://localhost:8000/api/dms/documents/?category=${activeTab}`;
+        ? `${API_BASE_URL}/dms/documents/`
+        : `${API_BASE_URL}/dms/documents/?category=${activeTab}`;
       const res = await fetch(url, {
-        headers: { Authorization: `Token ${token}` },
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (res.ok) {
         const data = await res.json();
@@ -73,10 +74,10 @@ export default function KnowledgeBasePage() {
 
   const handleDownload = async (doc: Document) => {
     try {
-      const token = localStorage.getItem("token") || "";
-      await fetch(`http://localhost:8000/api/dms/documents/${doc.id}/download/`, {
+      const token = localStorage.getItem(TOKEN_KEYS.ACCESS) || localStorage.getItem("access_token") || localStorage.getItem("token") || "";
+      await fetch(`${API_BASE_URL}/dms/documents/${doc.id}/download/`, {
         method: "POST",
-        headers: { Authorization: `Token ${token}` },
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       window.open(doc.url, "_blank");
       setDocuments((prev) =>

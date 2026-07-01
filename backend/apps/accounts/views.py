@@ -51,11 +51,16 @@ class UserProfileView(APIView):
         
         # Format matching frontend AuthUser format
         name = f"{user.first_name} {user.last_name}".strip() or user.username
+        role_mapping = {
+            'finance': 'accountant',
+            'tutor': 'teacher',
+        }
+        role_str = user.role.lower()
         formatted_data = {
             'id': str(user.id),
             'name': name,
             'username': user.username,
-            'role': user.role.lower(),
+            'role': role_mapping.get(role_str, role_str),
             'email': user.email,
         }
         

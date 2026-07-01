@@ -15,6 +15,7 @@ import {
   Search,
   Sparkles,
 } from "lucide-react";
+import { API_BASE_URL, TOKEN_KEYS } from "@/services/api-client";
 
 interface KPIStats {
   requests_today: number;
@@ -73,16 +74,16 @@ export default function AIAdministrationPage() {
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  const token = localStorage.getItem("access_token") || localStorage.getItem("token") || "";
+  const token = localStorage.getItem(TOKEN_KEYS.ACCESS) || localStorage.getItem("access_token") || localStorage.getItem("token") || "";
 
   const fetchData = async () => {
     setLoading(true);
     try {
       const headers = { Authorization: `Bearer ${token}` };
       const [resStats, resJobs, resDocs] = await Promise.all([
-        fetch("/api/ai/dashboard-stats/", { headers }),
-        fetch("/api/ai/indexing-jobs/", { headers }),
-        fetch("/api/ai/knowledge/", { headers }),
+        fetch(`${API_BASE_URL}/ai/dashboard-stats/`, { headers }),
+        fetch(`${API_BASE_URL}/ai/indexing-jobs/`, { headers }),
+        fetch(`${API_BASE_URL}/ai/knowledge/`, { headers }),
       ]);
 
       if (resStats.ok) setStats(await resStats.json());
@@ -107,7 +108,7 @@ export default function AIAdministrationPage() {
 
   const handleRetryJob = async (jobId: number) => {
     try {
-      const res = await fetch(`/api/ai/indexing-jobs/${jobId}/retry/`, {
+      const res = await fetch(`${API_BASE_URL}/ai/indexing-jobs/${jobId}/retry/`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -121,7 +122,7 @@ export default function AIAdministrationPage() {
 
   const handleReindexDoc = async (docId: number) => {
     try {
-      const res = await fetch(`/api/ai/knowledge/${docId}/reindex/`, {
+      const res = await fetch(`${API_BASE_URL}/ai/knowledge/${docId}/reindex/`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -136,7 +137,7 @@ export default function AIAdministrationPage() {
   const handleDeleteDoc = async (docId: number) => {
     if (!window.confirm("Are you sure you want to deactivate this knowledge source?")) return;
     try {
-      await fetch(`/api/ai/knowledge/${docId}/`, {
+      await fetch(`${API_BASE_URL}/ai/knowledge/${docId}/`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -159,7 +160,7 @@ export default function AIAdministrationPage() {
       formData.append("content", content);
       if (file) formData.append("file", file);
 
-      const res = await fetch("/api/ai/knowledge/", {
+      const res = await fetch(`${API_BASE_URL}/ai/knowledge/`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: formData,

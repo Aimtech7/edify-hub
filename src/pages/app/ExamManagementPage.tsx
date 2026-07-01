@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ShieldAlert, Plus, FileText, Download, CheckCircle2, Award, BarChart3, Upload, Edit3, Send } from 'lucide-react';
+import { API_BASE_URL, TOKEN_KEYS } from '@/services/api-client';
 
 export function ExamManagementPage() {
   const [activeTab, setActiveTab] = useState<'exams' | 'submissions' | 'reports'>('exams');
@@ -47,24 +48,24 @@ export function ExamManagementPage() {
 
   const fetchData = async () => {
     setLoading(true);
-    const token = localStorage.getItem('horizon_access_token') || localStorage.getItem('token') || '';
+    const token = localStorage.getItem(TOKEN_KEYS.ACCESS) || localStorage.getItem('access_token') || localStorage.getItem('token') || '';
     const headers = { 'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}` };
 
     try {
       if (activeTab === 'exams') {
-        const res = await fetch('/api/odel/formal-exams/', { headers });
+        const res = await fetch(`${API_BASE_URL}/odel/formal-exams/`, { headers });
         if (res.ok) {
           const data = await res.json();
           setExams(Array.isArray(data) ? data : data.results || []);
         }
       } else if (activeTab === 'submissions') {
-        const res = await fetch('/api/odel/formal-submissions/', { headers });
+        const res = await fetch(`${API_BASE_URL}/odel/formal-submissions/`, { headers });
         if (res.ok) {
           const data = await res.json();
           setSubmissions(Array.isArray(data) ? data : data.results || []);
         }
       } else if (activeTab === 'reports') {
-        const res = await fetch('/api/odel/formal-exams/reports/', { headers });
+        const res = await fetch(`${API_BASE_URL}/odel/formal-exams/reports/`, { headers });
         if (res.ok) setReports(await res.json());
       }
     } catch (e) {
@@ -78,7 +79,7 @@ export function ExamManagementPage() {
     e.preventDefault();
     setCreating(true);
     try {
-      const token = localStorage.getItem('horizon_access_token') || localStorage.getItem('token') || '';
+      const token = localStorage.getItem(TOKEN_KEYS.ACCESS) || localStorage.getItem('access_token') || localStorage.getItem('token') || '';
       const formData = new FormData();
       formData.append('title', title);
       formData.append('exam_code', examCode);
@@ -95,7 +96,7 @@ export function ExamManagementPage() {
       if (pdfFile) formData.append('exam_paper_pdf', pdfFile);
       if (supportingFile) formData.append('supporting_files', supportingFile);
 
-      const res = await fetch('/api/odel/formal-exams/', {
+      const res = await fetch(`${API_BASE_URL}/odel/formal-exams/`, {
         method: 'POST',
         headers: { 'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}` },
         body: formData
@@ -121,14 +122,14 @@ export function ExamManagementPage() {
     if (!gradingSub) return;
     setSavingGrade(true);
     try {
-      const token = localStorage.getItem('horizon_access_token') || localStorage.getItem('token') || '';
+      const token = localStorage.getItem(TOKEN_KEYS.ACCESS) || localStorage.getItem('access_token') || localStorage.getItem('token') || '';
       const formData = new FormData();
       formData.append('marks_obtained', marksGiven);
       formData.append('teacher_feedback', feedback);
       formData.append('marking_status', markingStatus);
       if (markedScriptFile) formData.append('marked_script', markedScriptFile);
 
-      const res = await fetch(`/api/odel/formal-submissions/${gradingSub.id}/mark/`, {
+      const res = await fetch(`${API_BASE_URL}/odel/formal-submissions/${gradingSub.id}/mark/`, {
         method: 'POST',
         headers: { 'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}` },
         body: formData
@@ -153,8 +154,8 @@ export function ExamManagementPage() {
     if (!moderatingSub) return;
     setSavingMod(true);
     try {
-      const token = localStorage.getItem('horizon_access_token') || localStorage.getItem('token') || '';
-      const res = await fetch(`/api/odel/formal-submissions/${moderatingSub.id}/moderate/`, {
+      const token = localStorage.getItem(TOKEN_KEYS.ACCESS) || localStorage.getItem('access_token') || localStorage.getItem('token') || '';
+      const res = await fetch(`${API_BASE_URL}/odel/formal-submissions/${moderatingSub.id}/moderate/`, {
         method: 'POST',
         headers: {
           'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}`,

@@ -21,6 +21,8 @@ from ai_assistant.services.search_service import AISearchService
 from ai_assistant.services.intent import IntentClassifier
 from ai_assistant.services.memory import ConversationMemoryService
 from ai_assistant.services.gateway import AIGateway
+from ai_assistant.services.tools import EnterpriseToolOrchestrator
+from ai_assistant.services.prompts import EnterprisePromptBuilder
 
 
 class AIChatView(APIView):
@@ -48,52 +50,57 @@ class AIChatView(APIView):
         # 1. Intent Classification
         intent = IntentClassifier.classify(question)
 
-        # 2. Retrieve Short-Term Conversation Memory
-        memory_context = ConversationMemoryService.get_conversation_history(session=session, user=user)
+        # 2. Retrieve Short-Term Conversation Memory & Active Entities
+        memory_context, entities = ConversationMemoryService.get_conversation_history(session=session, user=user)
 
-        # 3. Retrieve Role-Aware RAG Context & Suggested Actions
+        # 3. Tool Calling Orchestration Framework
         retrieval_start = time.time()
-        context_text, actions = retrieve_rag_context(user, question, intent=intent)
+        tool_data, actions, tools_called = EnterpriseToolOrchestrator.execute_tools(user, role, question, intent)
         retrieval_time_ms = int((time.time() - retrieval_start) * 1000)
 
-        # 4. Get AI Configuration & Execute via AI Gateway
-        gen_start = time.time()
+        # 4. Prompt Engineering & Conversational Grounding
         config = AISetting.get_settings()
+        sys_prompt, user_packet = EnterprisePromptBuilder.build_packet(
+            user=user,
+            role=role,
+            query=question,
+            intent=intent,
+            memory_context=memory_context,
+            tool_context=tool_data,
+            default_system=config.system_prompt
+        )
+
+        # 5. Get AI Configuration & Execute via AI Gateway Cascade
+        gen_start = time.time()
         reply, provider_used, fallback_reason, tokens_used = AIGateway.execute(
+            system_prompt=sys_prompt,
+            user_packet=user_packet,
             question=question,
-            context=context_text,
+            tool_data=tool_data,
             user=user,
             role=role,
             intent=intent,
-            memory_context=memory_context,
             config=config
         )
         generation_time_ms = int((time.time() - gen_start) * 1000)
         elapsed_ms = int((time.time() - start_time) * 1000)
 
-        # 5. Log Audit Record with Detailed Telemetry
+        # 6. Log Audit Record with Detailed Telemetry
         log = AIRequestLog.objects.create(
             session=session,
             user=user,
             user_role=role,
             question=question,
-            retrieved_context=f"[Intent: {intent} | Provider: {provider_used}]\n{context_text[:1400]}",
+            retrieved_context=f"[Intent: {intent} | Tools: {','.join(tools_called)} | Provider: {provider_used}]\n{tool_data[:1400]}",
             model_used=f"{provider_used}:{config.model_name}",
             response_text=reply,
             response_time_ms=elapsed_ms
         )
 
-        # Extract citations from context
-        citations = []
-        for line in context_text.split("\n"):
-            if "Priority " in line and "]" in line:
-                idx = line.find("]")
-                citations.append(line[:idx+1])
-
-        return Response({
+        response_payload = {
             "reply": reply,
             "actions": actions,
-            "citations": citations[:3],
+            "citations": [],
             "log_id": log.id,
             "session_id": session.id if session else None,
             "model": config.model_name,
@@ -103,8 +110,24 @@ class AIChatView(APIView):
             "generation_time_ms": generation_time_ms,
             "response_time_ms": elapsed_ms,
             "fallback_reason": fallback_reason,
-            "tokens_used": tokens_used
-        })
+            "tokens_used": tokens_used,
+            "tools_called": tools_called
+        }
+
+        # Debug Panel telemetry specifically for administrators / staff
+        is_admin = bool(user and (role in ['ADMIN', 'REGISTRAR', 'FINANCE', 'ICT'] or getattr(user, 'is_superuser', False) or getattr(user, 'is_staff', False)))
+        if is_admin:
+            response_payload["debug_telemetry"] = {
+                "provider": provider_used,
+                "intent": intent,
+                "tools_executed": tools_called,
+                "retrieval_time_ms": retrieval_time_ms,
+                "generation_time_ms": generation_time_ms,
+                "tokens_used": tokens_used,
+                "fallback_reason": fallback_reason
+            }
+
+        return Response(response_payload)
 
 
 class AIFeedbackView(APIView):

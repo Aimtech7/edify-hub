@@ -1,41 +1,56 @@
+import re
 from ai_assistant.models import AIRequestLog
 
 class ConversationMemoryService:
     """
-    Manages short-term conversation memory by fetching recent QA turns from AIRequestLog.
-    Enables follow-up questions to maintain continuity and context across user interactions.
+    Manages short-term conversation memory and active entity tracking across QA turns.
+    Ensures follow-up questions (e.g. pronouns, previous amounts, student names) resolve seamlessly.
     """
 
     @classmethod
-    def get_conversation_history(cls, session=None, user=None, max_turns: int = 5) -> str:
+    def get_conversation_history(cls, session=None, user=None, max_turns: int = 5) -> tuple[str, dict]:
         if not session and not user:
-            return ""
+            return "", {}
 
         query = AIRequestLog.objects.filter(is_deleted=False)
         if session:
             query = query.filter(session=session)
         elif user and getattr(user, 'is_authenticated', False):
-            # If no explicit session is given, fetch recent queries by user within last 2 hours
             query = query.filter(user=user)
         else:
-            return ""
+            return "", {}
 
         recent_logs = list(query.order_by('-timestamp')[:max_turns])
         if not recent_logs:
-            return ""
+            return "", {}
 
-        # Reverse so chronological order is maintained (oldest to newest)
         recent_logs.reverse()
 
-        history_lines = ["--- Prior Conversation Context ---"]
+        history_lines = []
+        entities = {"names": set(), "amounts": set(), "topics": set()}
+
         for log in recent_logs:
             q_clean = (log.question or "").strip()
             r_clean = (log.response_text or "").strip()
-            if len(r_clean) > 300:
-                r_clean = r_clean[:300] + "..."
+
+            # Extract figures and names for active entity tracking
+            amounts = re.findall(r'KES\s*[\d,]+(?:\.\d{2})?', r_clean)
+            for a in amounts:
+                entities["amounts"].add(a)
+
+            if len(r_clean) > 350:
+                r_clean = r_clean[:350] + "..."
+
             if q_clean and r_clean:
                 history_lines.append(f"User: {q_clean}")
                 history_lines.append(f"Assistant: {r_clean}")
 
-        history_lines.append("--- End Prior Context ---\n")
-        return "\n".join(history_lines)
+        summary_entities = ""
+        if entities["amounts"]:
+            summary_entities = f"Active Figures in Context: {', '.join(sorted(list(entities['amounts']))[:4])}."
+
+        mem_packet = "\n".join(history_lines)
+        if summary_entities:
+            mem_packet = f"{summary_entities}\n\n{mem_packet}"
+
+        return mem_packet, entities

@@ -13,8 +13,8 @@ def retrieve_rag_context(user, question: str) -> tuple[str, list[dict]]:
     q_lower = question.lower()
 
     # 1. Role-Aware Database RAG Retrieval
-    if user and user.is_authenticated:
-        role = getattr(user, 'role', 'STUDENT')
+    role = getattr(user, 'role', 'GUEST') if (user and getattr(user, 'is_authenticated', False)) else 'GUEST'
+    if user and getattr(user, 'is_authenticated', False):
         
         # STUDENT queries
         if role == 'STUDENT' or hasattr(user, 'student_profile'):

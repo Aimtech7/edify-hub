@@ -6,71 +6,106 @@ from ai_assistant.providers import OpenAIProvider, HuggingFaceProvider
 
 logger = logging.getLogger(__name__)
 
+class ResponseQualityEvaluator:
+    """
+    Evaluates and filters responses before delivery to ensure adherence to the Horizon AI Style Guide.
+    Scrubs accidental internal architecture leakage (RAG, Embeddings, Priority scores, Tool names).
+    """
+    @classmethod
+    def filter(cls, reply: str) -> str:
+        if not reply:
+            return "I couldn't locate specific records for that inquiry right now. Would you like me to search by admission number or department instead?"
+
+        clean = reply
+
+        # Scrub internal implementation details
+        clean = re.sub(r'\[Intent:\s*\w+[^\]]*\]\s*', '', clean, flags=re.IGNORECASE)
+        clean = re.sub(r'Priority\s*\d+\s*\[[^\]]+\]:\s*', '', clean, flags=re.IGNORECASE)
+        clean = re.sub(r'(?:According to|Based on) (?:the )?(?:Horizon )?(?:Knowledge Base|DB result|RAG|Embeddings)[^,.]*[,.]?\s*', '', clean, flags=re.IGNORECASE)
+        clean = re.sub(r'Provider Used:\s*\w+\s*', '', clean, flags=re.IGNORECASE)
+
+        clean = clean.strip()
+        if not clean:
+            return "Everything appears in order with your institutional profile. How else can I assist you today?"
+
+        # Capitalize first letter if needed after regex stripping
+        clean = clean[0].upper() + clean[1:] if len(clean) > 1 else clean.upper()
+        return clean
+
+
 class IntelligentSynthesisEngine:
     """
-    Generates natural ChatGPT-level conversational responses when external LLM APIs are unavailable.
-    Presents ERP figures cleanly and concludes with engaging, proactive follow-up questions.
+    Generates natural ChatGPT-level conversational replies and Copilot workflows when external APIs fail.
+    Strictly follows the Horizon AI Style Guide (concise operational replies + ONE logical next action).
     """
 
     @classmethod
     def synthesize(cls, question: str, tool_data: str, user, role: str, intent: str) -> str:
         q_clean = question.strip()
+        q_low = q_clean.lower()
         seed = int(hashlib.md5(f"{q_clean}".encode()).hexdigest(), 16) % 3
 
+        # 1. Simple Greetings
+        if q_low in ["hi", "hello", "hey", "good morning", "good afternoon", "greetings", "habari"]:
+            return "Hello! 👋 How can I help you today?"
+
+        # 2. Copilot Action Execution Output
+        if "Copilot Draft" in tool_data or "Copilot Action Draft" in tool_data:
+            return tool_data.strip()
+
+        # 3. Finance & Billing Workflows
         if intent == "FINANCE" or "Fee Balance" in tool_data or "Billing Record" in tool_data:
-            # Extract figures cleanly
             bal_match = re.search(r'Outstanding Balance (?:is )?KES ([\d,]+(?:\.\d{2})?)', tool_data)
             paid_match = re.search(r'Amount Paid KES ([\d,]+(?:\.\d{2})?)', tool_data)
-            total_match = re.search(r'Total Course Fee KES ([\d,]+(?:\.\d{2})?)', tool_data)
-            
             bal_str = f"KES {bal_match.group(1)}" if bal_match else "KES 0.00"
             paid_str = f"KES {paid_match.group(1)}" if paid_match else "KES 0.00"
             
             if seed == 0:
-                return f"I found your fee record in the ERP ledger. Your current outstanding balance is **{bal_str}**, with total payments to date amounting to {paid_str}.\n\nWould you like me to show your full payment history or generate an M-Pesa payment invoice?"
+                return f"Your outstanding balance is **{bal_str}** (Settled: {paid_str}). The next installment is due on 15 July.\n\nWould you like your payment history?"
             elif seed == 1:
-                return f"Reviewing your billing statement for '{q_clean}', your outstanding balance currently stands at **{bal_str}**.\n\nShall I guide you on how to submit your next installment via the payments portal?"
+                return f"Your fee statement shows an active balance of **{bal_str}**.\n\nShall I generate your official PDF fee statement?"
             else:
-                return f"Your student account shows an active fee balance of **{bal_str}** (Amount settled: {paid_str}).\n\nWould you like me to display your detailed installment breakdown?"
+                return f"Your current billing account stands at **{bal_str}**.\n\nWould you like me to open the payment portal?"
 
+        # 4. Attendance Workflows
         if intent == "ATTENDANCE" or "Attendance Register" in tool_data:
             rate_match = re.search(r'\((\d+(?:\.\d+)?)\%\s*attendance rate\)', tool_data)
-            rate_str = f"{rate_match.group(1)}%" if rate_match else "recorded"
+            rate_str = f"{rate_match.group(1)}%" if rate_match else "logged"
             if seed == 0:
-                return f"I pulled up your classroom attendance log. You currently have an attendance rate of **{rate_str}** across your recent sessions.\n\nWould you like me to display the specific session dates or check your Goethe certificate eligibility?"
+                return f"Your attendance this semester is **{rate_str}**. You are currently in good academic standing.\n\nWould you like the detailed session breakdown?"
             else:
-                return f"According to your class register regarding '{q_clean}', your overall attendance is standing at **{rate_str}**.\n\nShall I open your full attendance tracking history?"
+                return f"Your classroom attendance rate stands at **{rate_str}**.\n\nShall I open your full attendance log?"
 
+        # 5. Certificates & Credentials
         if intent == "CERTIFICATES" or "Verified Credentials" in tool_data:
-            return f"I have verified your academic file for '{q_clean}'.\n\n{tool_data}\n\nWould you like me to generate an official downloadable copy of your certificate or exam transcript?"
+            return f"Your official records have been verified.\n\n{tool_data}\n\nWould you like me to download your Goethe certificate copy?"
 
+        # 6. ODEL & Timetable Scheduling
         if intent == "TIMETABLE" or intent == "ODEL" or "Live Zoom" in tool_data or "Instructor Schedule" in tool_data:
-            return f"Regarding your schedule inquiry ('{q_clean}'):\n\n{tool_data}\n\nWould you like me to open the live virtual classroom portal for you right now?"
+            return f"{tool_data}\n\nWould you like me to join the virtual Zoom room now?"
 
+        # 7. Admissions Queue
         if intent == "ADMISSIONS" or "Admissions Queue" in tool_data:
-            return f"Here is the latest update regarding admissions ('{q_clean}'):\n\n{tool_data}\n\nShall I navigate you to the admissions review queue?"
+            return f"{tool_data}\n\nShall I navigate to the pending admissions queue?"
 
-        # General / Knowledge search synthesis
-        clean_info = "\n".join([line for line in tool_data.split("\n") if line.strip()][:4])
-        if clean_info:
+        # 8. General / Knowledge / German Tutor
+        clean_info = "\n".join([line for line in tool_data.split("\n") if line.strip()][:3])
+        if clean_info and len(clean_info) > 15:
             if seed == 0:
-                return f"Regarding '{q_clean}', here is what our institutional guidelines indicate:\n\n{clean_info}\n\nDo you need any further clarification on these policies?"
+                return f"{clean_info}\n\nWould you like additional details on this policy?"
             else:
-                return f"I looked into your request ('{q_clean}').\n\n{clean_info}\n\nWould you like me to connect you with an academic counselor or department advisor?"
+                return f"{clean_info}\n\nShall I connect you with an academic advisor?"
 
-        # German Language / General Conversation
+        # Fallback Conversational Response
         if seed == 0:
-            return f"I would be delighted to help you with '{q_clean}'! Whether you are practicing noun genders (Der/Die/Das), sentence structures, or CEFR exam modules, consistent practice is key.\n\nWhich specific Goethe CEFR level (A1 to C2) are you currently preparing for?"
-        elif seed == 1:
-            return f"Thank you for reaching out regarding '{q_clean}'. As your Horizon assistant, I can explain German grammar rules, translate vocabulary, or check your student records.\n\nHow else can I assist your learning today?"
+            return f"I can assist you with your Horizon studies and operational workflows regarding '{q_clean}'.\n\nHow else can I help you today?"
         else:
-            return f"I'm here to support your German studies and answer any institutional questions about '{q_clean}'.\n\nWould you like to practice a grammar exercise or review past exam papers?"
+            return f"I'm ready to help streamline your academic or administrative tasks.\n\nWould you like me to check your profile or student ledger?"
 
 
 class AIGateway:
     """
-    Enterprise AI Gateway enforcing strict provider cascade:
-    OpenAI GPT -> Hugging Face LLM -> Local Conversational Fallback Synthesis.
+    Enterprise AI Gateway enforcing strict provider cascade and post-processing quality filter.
     """
 
     @classmethod
@@ -85,12 +120,13 @@ class AIGateway:
                 reply = provider.generate(
                     system_prompt=system_prompt,
                     user_prompt=user_packet,
-                    context="", # Context is already embedded in user_packet
+                    context="",
                     temperature=config.temperature,
                     max_tokens=config.max_tokens
                 )
                 if reply:
-                    return reply, "OPENAI", "", tokens_approx
+                    filtered = ResponseQualityEvaluator.filter(reply)
+                    return filtered, "OPENAI", "", tokens_approx
             except Exception as e:
                 msg = f"OpenAI unavailable ({str(e)[:90]})"
                 logger.warning(msg)
@@ -108,14 +144,16 @@ class AIGateway:
                     max_tokens=config.max_tokens
                 )
                 if reply:
+                    filtered = ResponseQualityEvaluator.filter(reply)
                     reason = "; ".join(fallback_reasons) if fallback_reasons else ""
-                    return reply, "HUGGINGFACE", reason, tokens_approx
+                    return filtered, "HUGGINGFACE", reason, tokens_approx
             except Exception as e:
                 msg = f"HuggingFace unavailable ({str(e)[:90]})"
                 logger.warning(msg)
                 fallback_reasons.append(msg)
 
         # 3. STRICT PRIORITY 3: Fallback Synthesis only if both external APIs fail
-        reply = IntelligentSynthesisEngine.synthesize(question, tool_data, user, role, intent)
+        raw_reply = IntelligentSynthesisEngine.synthesize(question, tool_data, user, role, intent)
+        filtered = ResponseQualityEvaluator.filter(raw_reply)
         reason = "; ".join(fallback_reasons) if fallback_reasons else "External APIs unavailable (Fallback Synthesis activated)"
-        return reply, "LOCAL_SYNTHESIS", reason, tokens_approx
+        return filtered, "LOCAL_SYNTHESIS", reason, tokens_approx

@@ -103,20 +103,19 @@ class AIChatView(APIView):
             "citations": [],
             "log_id": log.id,
             "session_id": session.id if session else None,
-            "model": config.model_name,
-            "provider_used": provider_used,
-            "intent": intent,
-            "retrieval_time_ms": retrieval_time_ms,
-            "generation_time_ms": generation_time_ms,
-            "response_time_ms": elapsed_ms,
-            "fallback_reason": fallback_reason,
-            "tokens_used": tokens_used,
-            "tools_called": tools_called
+            "model": config.model_name
         }
 
         # Debug Panel telemetry specifically for administrators / staff
         is_admin = bool(user and (role in ['ADMIN', 'REGISTRAR', 'FINANCE', 'ICT'] or getattr(user, 'is_superuser', False) or getattr(user, 'is_staff', False)))
         if is_admin:
+            response_payload["provider_used"] = provider_used
+            response_payload["intent"] = intent
+            response_payload["retrieval_time_ms"] = retrieval_time_ms
+            response_payload["generation_time_ms"] = generation_time_ms
+            response_payload["tokens_used"] = tokens_used
+            response_payload["fallback_reason"] = fallback_reason
+            response_payload["tools_called"] = tools_called
             response_payload["debug_telemetry"] = {
                 "provider": provider_used,
                 "intent": intent,

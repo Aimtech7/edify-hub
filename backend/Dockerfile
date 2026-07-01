@@ -27,6 +27,5 @@ COPY . /app/
 # Collect static files
 RUN python manage.py collectstatic --noinput
 
-# Run gunicorn
-# Bind to the port provided by the PORT environment variable or default to 8000
-CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-8000} config.wsgi:application"]
+# Run database migrations, seed demo accounts, and launch gunicorn
+CMD ["sh", "-c", "python manage.py migrate --noinput && python seed_all_demo_users.py && gunicorn --bind 0.0.0.0:${PORT:-8000} config.wsgi:application"]
